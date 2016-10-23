@@ -56,6 +56,9 @@ public class SmackConnection {
 
 	private final Map<String, Long> activeUsers = new ConcurrentHashMap<>();
 
+	private final Map<String, Long> activePlugs = new ConcurrentHashMap<>();
+
+	
 	static {
 		final GsonBuilder gsonBuilder = new GsonBuilder();
 		gsonBuilder.registerTypeAdapter(Date.class, new DateSerializer());
@@ -161,9 +164,21 @@ public class SmackConnection {
 		}
 		return timestamp > System.currentTimeMillis() - 60 * 1000;
 	}
+	
+	public boolean isPlugOnline(String targetJid) {
+		final Long timestamp = activePlugs.get(targetJid);
+		if (timestamp == null) {
+			return false;
+		}
+		return timestamp > System.currentTimeMillis() - 60 * 1000;
+	}
 
 	public void setOnline(String targetJid, boolean status) {
 		activeUsers.put(targetJid, status ? System.currentTimeMillis() : 0);
+	}
+	
+	public void setPlugOnline(String targetJid, boolean status) {
+		activePlugs.put(targetJid, status ? System.currentTimeMillis() : 0);
 	}
 
 	public void updateStatus() {

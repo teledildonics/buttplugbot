@@ -60,6 +60,8 @@ public class Plug {
 
 	private volatile boolean online = false;
 
+	private volatile boolean userOnline = false;
+
 	private static long createId() {
 		long id = sr.nextLong();
 		while (id < 0) {
@@ -103,6 +105,14 @@ public class Plug {
 		this.online = online;
 	}
 
+	public boolean isUserOnline() {
+		return userOnline;
+	}
+
+	public void setUserOnline(boolean userOnline) {
+		this.userOnline = userOnline;
+	}
+
 	public long getUserId() {
 		return userId;
 	}
@@ -140,21 +150,20 @@ public class Plug {
 		StringBuilder b = new StringBuilder();
 		b.append("*Buttplug of ").append(getName()).append("*\n");
 		if (!isOnline()) {
-			b.append("Offline");
+			b.append("Plug not connected, User " + (isUserOnline() ? "online" : " offline"));
 		} else {
 			if (state == State.IDLE) {
-				b.append("Idle\n");
-				b.append(getAmplitude()).append("\n");
+				b.append("Idling ").append(getAmplitude()).append("\n");
 				b.append("  ").append(getInterval());
 			}
 			if (state == State.BUZZ) {
-				b.append("Buzzing " + getAmplitude() + "\n");
+				b.append("Buzzing ").append(getAmplitude()).append("\n");
 				b.append("  ").append(getInterval());
 			}
 			if (state == State.SINE) {
-				b.append("Pattern " + getAmplitude() + "\n");
+				b.append("Playing sine pattern ").append(getAmplitude()).append(" for ~")
+						.append(Math.ceil(getRemainingSeconds() / 5) * 5).append(" s");
 				b.append("  ").append(getInterval()).append("\n");
-				b.append("🕑 ~").append(Math.ceil(getRemainingSeconds() / 5) * 5).append(" s");
 			}
 		}
 		return b.toString();

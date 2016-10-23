@@ -40,10 +40,11 @@ public class SmackRosterListener implements RosterListener {
 				final DefaultExtensionElement defaultExtensionElement = (DefaultExtensionElement) presence
 						.getExtension("toy", StreamOpen.CLIENT_NAMESPACE);
 				final String status = defaultExtensionElement.getValue("status");
-				connection.setOnline(presence.getFrom().split("/")[0], "true".equals(status));
+				connection.setPlugOnline(presence.getFrom().split("/")[0], "true".equals(status));
 			} else {
-				connection.setOnline(presence.getFrom().split("/")[0], false);
+				connection.setPlugOnline(presence.getFrom().split("/")[0], false);
 			}
+			connection.setOnline(presence.getFrom().split("/")[0], true);
 		} else {
 			connection.setOnline(presence.getFrom().split("/")[0], false);
 		}

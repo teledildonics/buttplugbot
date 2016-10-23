@@ -27,8 +27,8 @@ public class PlugControl {
 	}
 
 	public void sendUpdate() {
-
-		if (connection.isOnline(plug.getTargetJid())) {
+		plug.setUserOnline(connection.isOnline(plug.getTargetJid()));
+		if (connection.isPlugOnline(plug.getTargetJid())) {
 			plug.setOnline(true);
 		} else {
 			plug.setOnline(false);
