@@ -35,6 +35,7 @@ import org.telegram.telegrambots.updateshandlers.SentCallback;
 import buttplugbot.telegrambot.dao.PatternDao;
 import buttplugbot.telegrambot.dao.PlugDao;
 import buttplugbot.telegrambot.model.Plug;
+import buttplugbot.telegrambot.model.Plug.Trace;
 import buttplugbot.telegrambot.model.StatusUpdate;
 import buttplugbot.telegrambot.smack.SmackConnection;
 import buttplugbot.telegrambot.util.EmailUtil;
@@ -64,6 +65,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		register(new ShareCommand());
 		register(new PlugCommand());
 		register(new UnregisterCommand());
+		register(new TraceCommand());
 		executor.scheduleAtFixedRate(() -> {
 			for (final PlugControl plugControl : plugs.values()) {
 				plugControl.sendUpdate();
@@ -113,13 +115,14 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			} else {
 				PlugControl plugControl = plugs.get(plugId);
 				if (plugControl == null) {
-					plugControl = new PlugControl(plug, connection, patternDao);
+					plugControl = new PlugControl(plug, connection, patternDao, plugDao);
 					plugs.put(plug.getId(), plugControl);
 				}
 				plugControl.getStatusMessageUpdater().addStatusUpdateMessage(
 						new StatusUpdateMessage(query.getMessage().getChatId(), query.getMessage().getMessageId()),
 						false);
 				answerText = plugControl.processMessage(query.getFrom().getId(), command);
+				traceCommand(query, command, plug);
 			}
 		}
 		final AnswerCallbackQuery answer = new AnswerCallbackQuery();
@@ -131,6 +134,32 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			answerCallbackQuery(answer);
 		} catch (final TelegramApiException e) {
 			logger.warn("Failed to send message: " + e.getApiResponse(), e);
+		}
+	}
+
+	private void traceCommand(final CallbackQuery query, final String command, final Plug plug) {
+		final String name = createName(query.getFrom());
+		if ("sine".equals(command) || "buzz".equals(command)) {
+			plug.setLastInteractedUser(name);
+		}
+		if (command.contains("trace") && query.getMessage().getChat().isUserChat()
+				&& query.getFrom().getId() == plug.getUserId()) {
+			plug.setUserChatId(query.getMessage().getChatId());
+			plugDao.storeDB();
+		}
+		if (plug.getTrace() == Trace.FULL_TRACE) {
+			final String traceMessage = "User " + name + " pressed the command " + command;
+			if (plug.getUserChatId() != null) {
+				try {
+					final SendMessage message = new SendMessage();
+					message.setChatId(String.valueOf(plug.getUserChatId()));
+					message.setText(traceMessage);
+					message.disableNotification();
+					sendMessage(message);
+				} catch (final TelegramApiException e) {
+					logger.warn("Failed to send message: " + e.getApiResponse(), e);
+				}
+			}
 		}
 	}
 
@@ -184,6 +213,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		if (plug == null) {
 			plug = new Plug(jid, message.getFrom().getId());
 			plug.setName(createName(message.getFrom()));
+			plug.setUserChatId(message.getChatId());
 			plugDao.add(plug);
 		}
 		sendMessage(absSender, message.getChat(),
@@ -238,7 +268,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 
 		@Override
 		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
-			logger.info("Received /share command from user {} in chat {} with arguments {}",
+			logger.info("Received /plug command from user {} in chat {} with arguments {}",
 					new Object[] { user, chat, arguments });
 
 			if (arguments.length != 1 || arguments[0] == null) {
@@ -250,6 +280,53 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		}
 	}
 
+	public class TraceCommand extends BotCommand {
+		public TraceCommand() {
+			super("trace", "Select, if you want to be notified, if someone presses a button.");
+		}
+
+		@Override
+		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
+			logger.info("Received /trace command from user {} in chat {} with arguments {}",
+					new Object[] { user, chat, arguments });
+
+			if (!chat.isUserChat()) {
+				sendMessage(absSender, chat, "Please chat with me directly.");
+				return;
+			}
+			final Plug plug = plugDao.getPlugByUserId(user.getId());
+			if (plug == null) {
+				startRegistering(absSender, chat);
+				return;
+			}
+			final SendMessage answer = new SendMessage();
+			answer.disableNotification();
+			final InlineKeyboardMarkup replyMarkup = new InlineKeyboardMarkup();
+			final List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+			rows.add(new ArrayList<>());
+			rows.get(0).add(new InlineKeyboardButton().setText("No Trace").setCallbackData(plug.getId() + "|notrace"));
+			rows.get(0).add(
+					new InlineKeyboardButton().setText("Single trace").setCallbackData(plug.getId() + "|singletrace"));
+			rows.get(0)
+					.add(new InlineKeyboardButton().setText("Full trace").setCallbackData(plug.getId() + "|fulltrace"));
+			replyMarkup.setKeyboard(rows);
+			answer.setReplyMarkup(replyMarkup);
+			answer.enableMarkdown(true);
+			answer.setChatId(chat.getId().toString());
+			answer.setText("Do you want to be notified, if someone presses a button?\n"
+					+ "No trace (default) won't show you any informations about who pressed the buttons.\n"
+					+ "Single trace means, that the last person that pressed a button will be shown in the output.\n"
+					+ "Full trace will send you a message everytime someone presses a button.\n"
+					+ "Your current setting is: " + plug.getTraceAsString());
+			try {
+				logger.info("Sending message: {}", answer);
+				absSender.sendMessage(answer);
+			} catch (final TelegramApiException e) {
+				logger.warn("Failed to send message: " + e.getApiResponse(), e);
+			}
+		}
+	}
+
 	private void showButtonsForPlug(AbsSender absSender, Chat chat, Plug plug) {
 		if (plug == null) {
 			sendMessage(absSender, chat, "You've not registered your plug yet, type /register in direct chat.");
@@ -258,7 +335,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 
 		PlugControl plugControl = plugs.get(plug.getId());
 		if (plugControl == null) {
-			plugControl = new PlugControl(plug, connection, patternDao);
+			plugControl = new PlugControl(plug, connection, patternDao, plugDao);
 			plugs.put(plug.getId(), plugControl);
 		}
 		final Message message = sendButtons(absSender, chat, plug);

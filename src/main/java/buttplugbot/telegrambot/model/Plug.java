@@ -9,6 +9,10 @@ public class Plug {
 		IDLE, BUZZ, SINE
 	}
 
+	public static enum Trace {
+		NO_TRACE, SINGLE_TRACE, FULL_TRACE
+	}
+
 	private final static SecureRandom sr = new SecureRandom();
 
 	private final long id;
@@ -62,6 +66,12 @@ public class Plug {
 
 	private volatile boolean userOnline = false;
 
+	private volatile Trace trace = Trace.NO_TRACE;
+
+	private volatile Long userChatId = null;
+
+	private volatile String lastInteractedUser = null;
+
 	private static long createId() {
 		long id = sr.nextLong();
 		while (id < 0) {
@@ -71,14 +81,16 @@ public class Plug {
 	}
 
 	public Plug(String targetJid, long userId) {
-		this(createId(), targetJid, userId, "unknown");
+		this(createId(), targetJid, userId, "unknown", Trace.NO_TRACE, null);
 	}
 
-	public Plug(long id, String targetJid, long userId, String name) {
+	public Plug(long id, String targetJid, long userId, String name, Trace trace, Long userChatId) {
 		this.id = id;
 		this.targetJid = targetJid;
 		this.userId = userId;
+		this.userChatId = userChatId;
 		this.name = name;
+		this.trace = trace;
 	}
 
 	public String getId() {
@@ -145,10 +157,42 @@ public class Plug {
 		return (nextStateChange.get() - System.currentTimeMillis()) / 1000;
 	}
 
+	public Trace getTrace() {
+		return trace;
+	}
+
+	public void setTrace(Trace trace) {
+		this.trace = trace;
+	}
+
+	public String getTraceAsString() {
+		switch (trace) {
+		default:
+		case NO_TRACE:
+			return "no trace";
+		case SINGLE_TRACE:
+			return "single trace";
+		case FULL_TRACE:
+			return "full trace";
+		}
+	}
+
+	public void setLastInteractedUser(String lastInteractedUser) {
+		this.lastInteractedUser = lastInteractedUser;
+	}
+
+	public Long getUserChatId() {
+		return userChatId;
+	}
+
+	public void setUserChatId(Long userChatId) {
+		this.userChatId = userChatId;
+	}
+
 	@Override
 	public String toString() {
 		final StringBuilder b = new StringBuilder();
-		b.append("*Buttplug of ").append(getName()).append("*\n");
+		b.append("*Buttplug of ").append(getName()).append("* (" + getTraceAsString() + ")\n");
 		if (!isOnline()) {
 			b.append("Plug not connected, User " + (isUserOnline() ? "online" : " offline"));
 		} else {
@@ -157,12 +201,20 @@ public class Plug {
 				b.append("  ").append(getInterval());
 			}
 			if (state == State.BUZZ) {
-				b.append("Buzzing ").append(getAmplitude()).append("\n");
+				b.append("Buzzing ").append(getAmplitude());
+				if (getTrace() == Trace.SINGLE_TRACE || getTrace() == Trace.FULL_TRACE && lastInteractedUser != null) {
+					b.append(" by ").append(lastInteractedUser);
+				}
+				b.append("\n");
 				b.append("  ").append(getInterval());
 			}
 			if (state == State.SINE) {
 				b.append("Playing sine pattern ").append(getAmplitude()).append(" for ~")
 						.append(Math.ceil(getRemainingSeconds() / 5) * 5).append(" s");
+				if (getTrace() == Trace.SINGLE_TRACE || getTrace() == Trace.FULL_TRACE && lastInteractedUser != null) {
+					b.append(" by ").append(lastInteractedUser);
+				}
+				b.append("\n");
 				b.append("  ").append(getInterval()).append("\n");
 			}
 		}

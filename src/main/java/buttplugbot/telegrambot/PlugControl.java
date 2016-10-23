@@ -1,9 +1,11 @@
 package buttplugbot.telegrambot;
 
 import buttplugbot.telegrambot.dao.PatternDao;
+import buttplugbot.telegrambot.dao.PlugDao;
 import buttplugbot.telegrambot.model.Pattern;
 import buttplugbot.telegrambot.model.Plug;
 import buttplugbot.telegrambot.model.Plug.State;
+import buttplugbot.telegrambot.model.Plug.Trace;
 import buttplugbot.telegrambot.model.StatusUpdate;
 import buttplugbot.telegrambot.smack.SmackConnection;
 
@@ -18,10 +20,13 @@ public class PlugControl {
 
 	private final StatusMessageUpdater statusMessageUpdater;
 
-	public PlugControl(Plug plug, SmackConnection connection, PatternDao patternDao) {
+	private final PlugDao plugDao;
+
+	public PlugControl(Plug plug, SmackConnection connection, PatternDao patternDao, PlugDao plugDao) {
 		this.plug = plug;
 		this.connection = connection;
 		this.patternDao = patternDao;
+		this.plugDao = plugDao;
 		this.plugRecipient = new PlugRecipient(connection, plug.getTargetJid());
 		this.statusMessageUpdater = new StatusMessageUpdater();
 	}
@@ -83,6 +88,21 @@ public class PlugControl {
 		case "amplitude+":
 			plug.getAmplitude().modifyValue(+2);
 			return "Power changed " + plug.getAmplitude();
+		case "notrace":
+			if (plug.getUserId() == senderId) {
+				plug.setTrace(Trace.NO_TRACE);
+				plugDao.storeDB();
+			}
+		case "singletrace":
+			if (plug.getUserId() == senderId) {
+				plug.setTrace(Trace.SINGLE_TRACE);
+				plugDao.storeDB();
+			}
+		case "fulltrace":
+			if (plug.getUserId() == senderId) {
+				plug.setTrace(Trace.FULL_TRACE);
+				plugDao.storeDB();
+			}
 		}
 		return null;
 	}
@@ -90,5 +110,4 @@ public class PlugControl {
 	public StatusMessageUpdater getStatusMessageUpdater() {
 		return statusMessageUpdater;
 	}
-
 }
