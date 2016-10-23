@@ -118,9 +118,11 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 					plugControl = new PlugControl(plug, connection, patternDao, plugDao);
 					plugs.put(plug.getId(), plugControl);
 				}
-				plugControl.getStatusMessageUpdater().addStatusUpdateMessage(
-						new StatusUpdateMessage(query.getMessage().getChatId(), query.getMessage().getMessageId()),
-						false);
+				if (!command.contains("trace")) {
+					plugControl.getStatusMessageUpdater().addStatusUpdateMessage(
+							new StatusUpdateMessage(query.getMessage().getChatId(), query.getMessage().getMessageId()),
+							false);
+				}
 				answerText = plugControl.processMessage(query.getFrom().getId(), command);
 				traceCommand(query, command, plug);
 			}
