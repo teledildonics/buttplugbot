@@ -21,47 +21,48 @@ import buttplugbot.telegrambot.util.PlugSerializer;
 
 public class PlugDao {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
-	
+
 	private final Map<String, Plug> plugsById = new ConcurrentHashMap<>();
-	
+
 	private final Map<String, Plug> plugsByEmails = new ConcurrentHashMap<>();
-	
+
 	private final Map<Long, Plug> plugsByUsers = new ConcurrentHashMap<>();
-	
+
 	private static final Gson gson;
-	
+
 	static {
 		final GsonBuilder gsonBuilder = new GsonBuilder();
 		gsonBuilder.registerTypeAdapter(Plug.class, new PlugSerializer());
 		gson = gsonBuilder.create();
 	}
-	
+
 	public PlugDao() {
 		loadDB();
 	}
-	
+
 	public Plug getPlugByEmail(String email) {
 		return plugsByEmails.get(email.toLowerCase(Locale.US));
 	}
-	
+
 	public Plug getPlugById(String id) {
 		return plugsById.get(id);
 	}
-	
+
 	public Plug getPlugByUserId(long id) {
 		return plugsByUsers.get(id);
 	}
-	
+
 	public Collection<Plug> getAllPlugs() {
 		return plugsByEmails.values();
 	}
-	
+
 	public synchronized void loadDB() {
 		try {
 			final TypeToken<List<Plug>> plugListType = new TypeToken<List<Plug>>() {
 			};
-			List<Plug> plugs = gson.fromJson(FileUtils.readFileOrThrow(new File("plugs.json")), plugListType.getType());
-			for (Plug plug : plugs) {
+			final List<Plug> plugs = gson.fromJson(FileUtils.readFileOrThrow(new File("plugs.json")),
+					plugListType.getType());
+			for (final Plug plug : plugs) {
 				plugsByEmails.put(plug.getTargetJid(), plug);
 				plugsById.put(plug.getId(), plug);
 				plugsByUsers.put(plug.getUserId(), plug);

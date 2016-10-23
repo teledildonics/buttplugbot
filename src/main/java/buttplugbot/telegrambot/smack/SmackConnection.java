@@ -58,7 +58,6 @@ public class SmackConnection {
 
 	private final Map<String, Long> activePlugs = new ConcurrentHashMap<>();
 
-	
 	static {
 		final GsonBuilder gsonBuilder = new GsonBuilder();
 		gsonBuilder.registerTypeAdapter(Date.class, new DateSerializer());
@@ -87,7 +86,6 @@ public class SmackConnection {
 		return;
 
 	}
-
 
 	public void authenticate() throws Exception {
 		if (!xmpp.isAuthenticated()) {
@@ -164,7 +162,7 @@ public class SmackConnection {
 		}
 		return timestamp > System.currentTimeMillis() - 60 * 1000;
 	}
-	
+
 	public boolean isPlugOnline(String targetJid) {
 		final Long timestamp = activePlugs.get(targetJid);
 		if (timestamp == null) {
@@ -176,7 +174,7 @@ public class SmackConnection {
 	public void setOnline(String targetJid, boolean status) {
 		activeUsers.put(targetJid, status ? System.currentTimeMillis() : 0);
 	}
-	
+
 	public void setPlugOnline(String targetJid, boolean status) {
 		activePlugs.put(targetJid, status ? System.currentTimeMillis() : 0);
 	}
@@ -202,10 +200,9 @@ public class SmackConnection {
 		}
 	}
 
-
 	public void removeUser(String targetJid) {
 		try {
-			RosterEntry entry = roster.getEntry(targetJid);
+			final RosterEntry entry = roster.getEntry(targetJid);
 			if (entry != null) {
 				roster.removeEntry(entry);
 			}

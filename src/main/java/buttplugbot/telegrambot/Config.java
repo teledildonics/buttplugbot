@@ -5,12 +5,12 @@ public interface Config {
 	 * Telegram bot name
 	 */
 	static final String botName = "buttplug_bot";
-	
+
 	/**
 	 * Telegram bot token
 	 */
 	static final String botToken = "";
-	
+
 	/**
 	 * XMPP service name
 	 */
@@ -50,7 +50,7 @@ public interface Config {
 	 * Length of the vibration pattern in seconds.
 	 */
 	static final int vibrationLength = 20;
-	
+
 	/**
 	 * Length of the buzz vibration in milliseconds.
 	 */
@@ -60,7 +60,7 @@ public interface Config {
 	 * Timeout until a user is marked as inactive in the chat.
 	 */
 	static final long totalActivityTimeout = 10 * 60 * 1000;
-	
+
 	/**
 	 * Check and create patterns, if they are missing.
 	 */

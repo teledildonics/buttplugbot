@@ -3,8 +3,8 @@ package buttplugbot.telegrambot;
 import buttplugbot.telegrambot.dao.PatternDao;
 import buttplugbot.telegrambot.model.Pattern;
 import buttplugbot.telegrambot.model.Plug;
-import buttplugbot.telegrambot.model.StatusUpdate;
 import buttplugbot.telegrambot.model.Plug.State;
+import buttplugbot.telegrambot.model.StatusUpdate;
 import buttplugbot.telegrambot.smack.SmackConnection;
 
 public class PlugControl {
@@ -38,11 +38,12 @@ public class PlugControl {
 
 		if ((plug.getState() == State.IDLE || plug.getRemainingSeconds() < 0) && plug.getNextState() == State.BUZZ) {
 			plug.changeState(State.BUZZ, Config.buzzLength);
-			long amplitude = plug.getAmplitude().commit();
+			final long amplitude = plug.getAmplitude().commit();
 			plugRecipient.sendPowerLevel((amplitude + 4) * 5);
-		} else if ((plug.getState() == State.IDLE || plug.getRemainingSeconds() < 0) && plug.getNextState() == State.SINE) {
-			long amplitude = plug.getAmplitude().commit();
-			long interval = plug.getInterval().commit();
+		} else if ((plug.getState() == State.IDLE || plug.getRemainingSeconds() < 0)
+				&& plug.getNextState() == State.SINE) {
+			final long amplitude = plug.getAmplitude().commit();
+			final long interval = plug.getInterval().commit();
 			plug.changeState(State.SINE, patternDao.getLength(interval));
 			if (amplitude == 0) {
 				plugRecipient.sendPowerLevel(20);

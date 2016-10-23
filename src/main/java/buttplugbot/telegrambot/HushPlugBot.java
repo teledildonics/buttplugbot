@@ -100,14 +100,14 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 	}
 
 	private void handleCallbackQuery(final CallbackQuery query) {
-		String data = query.getData();
-		String plugId = StringUtils.substringBefore(data, "|");
-		String command = StringUtils.substringAfter(data, "|");
+		final String data = query.getData();
+		final String plugId = StringUtils.substringBefore(data, "|");
+		final String command = StringUtils.substringAfter(data, "|");
 		final String answerText;
 		if (StringUtils.isEmpty(plugId) || StringUtils.isEmpty(command)) {
 			answerText = "Unknown command.";
 		} else {
-			Plug plug = plugDao.getPlugById(plugId);
+			final Plug plug = plugDao.getPlugById(plugId);
 			if (plug == null) {
 				answerText = "Unknown plug.";
 			} else {
@@ -122,14 +122,14 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 				answerText = plugControl.processMessage(query.getFrom().getId(), command);
 			}
 		}
-		AnswerCallbackQuery answer = new AnswerCallbackQuery();
+		final AnswerCallbackQuery answer = new AnswerCallbackQuery();
 		answer.setCallbackQueryId(query.getId());
 		if (answerText != null) {
 			answer.setText(answerText);
 		}
 		try {
 			answerCallbackQuery(answer);
-		} catch (TelegramApiException e) {
+		} catch (final TelegramApiException e) {
 			logger.warn("Failed to send message: " + e.getApiResponse(), e);
 		}
 	}
@@ -163,8 +163,8 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 	}
 
 	private void registerEmail(AbsSender absSender, Message message) {
-		String email = message.getText();
-		String checkedEmail = EmailUtil.check(email);
+		final String email = message.getText();
+		final String checkedEmail = EmailUtil.check(email);
 		if (checkedEmail == null) {
 			sendMessage(absSender, message.getChat(), "Unable to send friend request to " + email);
 			return;
@@ -201,7 +201,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
 			logger.info("Received /unregister command from user {} in chat {} with arguments {}",
 					new Object[] { user, chat, arguments });
-			Plug plug = plugDao.getPlugByUserId(user.getId());
+			final Plug plug = plugDao.getPlugByUserId(user.getId());
 			if (plug != null) {
 				connection.removeUser(plug.getTargetJid());
 				plugDao.remove(plug);
@@ -209,7 +209,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			}
 		}
 	}
-	
+
 	private String createName(User user) {
 		if (!StringUtils.isEmpty(user.getUserName())) {
 			return "@" + user.getUserName();
@@ -226,7 +226,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
 			logger.info("Received /share command from user {} in chat {} with arguments {}",
 					new Object[] { user, chat, arguments });
-			Plug plug = plugDao.getPlugByUserId(user.getId());
+			final Plug plug = plugDao.getPlugByUserId(user.getId());
 			showButtonsForPlug(absSender, chat, plug);
 		}
 	}
@@ -245,9 +245,8 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 				sendMessage(absSender, chat, "Please type /plug id");
 				return;
 			}
-			Plug plug = plugDao.getPlugById(arguments[0]);
+			final Plug plug = plugDao.getPlugById(arguments[0]);
 			showButtonsForPlug(absSender, chat, plug);
-
 		}
 	}
 
@@ -262,7 +261,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			plugControl = new PlugControl(plug, connection, patternDao);
 			plugs.put(plug.getId(), plugControl);
 		}
-		Message message = sendButtons(absSender, chat, plug);
+		final Message message = sendButtons(absSender, chat, plug);
 		if (message != null) {
 			plugControl.getStatusMessageUpdater()
 					.addStatusUpdateMessage(new StatusUpdateMessage(message.getChatId(), message.getMessageId()), true);
@@ -279,7 +278,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
 			logger.info("Received /start command from user {} in chat {} with arguments {}",
 					new Object[] { user, chat, arguments });
-			Plug plug = plugDao.getPlugByUserId(user.getId());
+			final Plug plug = plugDao.getPlugByUserId(user.getId());
 			if (plug == null) {
 				startRegistering(absSender, chat);
 			} else {
@@ -308,7 +307,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 
 	private InlineKeyboardMarkup createKeyboard(String id) {
 		final InlineKeyboardMarkup replyMarkup = new InlineKeyboardMarkup();
-		List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+		final List<List<InlineKeyboardButton>> rows = new ArrayList<>();
 		rows.add(new ArrayList<>());
 		rows.get(0).add(new InlineKeyboardButton().setText("💓 2s").setCallbackData(id + "|buzz"));
 		rows.get(0).add(
@@ -337,9 +336,9 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 
 	public class StatusUpdateMessage implements Comparable<StatusUpdateMessage> {
 
-		private Long chatId;
+		private final Long chatId;
 
-		private Integer messageId;
+		private final Integer messageId;
 
 		public StatusUpdateMessage(Long chatId, Integer messageId) {
 			this.chatId = chatId;
@@ -347,7 +346,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		}
 
 		public void update(StatusUpdate status, Runnable remove) {
-			EditMessageText edit = new EditMessageText();
+			final EditMessageText edit = new EditMessageText();
 			edit.setChatId(Long.toString(chatId));
 			edit.setMessageId(messageId);
 			edit.setText(status.getMessage());
@@ -373,7 +372,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 						remove.run();
 					}
 				});
-			} catch (TelegramApiException e) {
+			} catch (final TelegramApiException e) {
 				logger.warn("Failed to send message", e);
 			}
 		}
@@ -382,24 +381,29 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		public int hashCode() {
 			final int prime = 31;
 			int result = 1;
-			result = prime * result + ((chatId == null) ? 0 : chatId.hashCode());
+			result = prime * result + (chatId == null ? 0 : chatId.hashCode());
 			return result;
 		}
 
 		@Override
 		public boolean equals(Object obj) {
-			if (this == obj)
+			if (this == obj) {
 				return true;
-			if (obj == null)
+			}
+			if (obj == null) {
 				return false;
-			if (getClass() != obj.getClass())
+			}
+			if (getClass() != obj.getClass()) {
 				return false;
-			StatusUpdateMessage other = (StatusUpdateMessage) obj;
+			}
+			final StatusUpdateMessage other = (StatusUpdateMessage) obj;
 			if (chatId == null) {
-				if (other.chatId != null)
+				if (other.chatId != null) {
 					return false;
-			} else if (!chatId.equals(other.chatId))
+				}
+			} else if (!chatId.equals(other.chatId)) {
 				return false;
+			}
 			return true;
 		}
 

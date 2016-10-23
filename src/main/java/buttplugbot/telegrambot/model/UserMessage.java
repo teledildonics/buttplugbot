@@ -30,7 +30,6 @@ public class UserMessage {
 		return id;
 	}
 
-
 	public String getData() {
 		return data;
 	}

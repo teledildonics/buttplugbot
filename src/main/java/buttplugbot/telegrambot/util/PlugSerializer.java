@@ -16,7 +16,7 @@ public class PlugSerializer implements JsonDeserializer<Plug>, JsonSerializer<Pl
 
 	@Override
 	public JsonElement serialize(Plug src, Type typeOfSrc, JsonSerializationContext context) {
-		JsonObject obj = new JsonObject();
+		final JsonObject obj = new JsonObject();
 		obj.addProperty("id", src.getId());
 		obj.addProperty("targetJid", src.getTargetJid());
 		obj.addProperty("userId", src.getUserId());
@@ -27,11 +27,11 @@ public class PlugSerializer implements JsonDeserializer<Plug>, JsonSerializer<Pl
 	@Override
 	public Plug deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
 			throws JsonParseException {
-		JsonObject obj = json.getAsJsonObject();
-		long id = Long.parseLong(obj.get("id").getAsString(), 16);
-		String targetJid = obj.get("targetJid").getAsString();
-		long userId = obj.get("userId").getAsLong();
-		String name = obj.get("name").getAsString();
+		final JsonObject obj = json.getAsJsonObject();
+		final long id = Long.parseLong(obj.get("id").getAsString(), 16);
+		final String targetJid = obj.get("targetJid").getAsString();
+		final long userId = obj.get("userId").getAsLong();
+		final String name = obj.get("name").getAsString();
 		return new Plug(id, targetJid, userId, name);
 	}
 

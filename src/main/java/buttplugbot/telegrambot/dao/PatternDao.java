@@ -75,12 +75,12 @@ public class PatternDao {
 	private Pattern uploadPattern(int i, int a) throws Exception {
 		final String pattern = createPattern(i, a);
 		final String uploadUrl = "/wear/chat/saveFile/pattern";
-		final HttpPost httpPost = new HttpPost(Config.apiUrl+uploadUrl);
+		final HttpPost httpPost = new HttpPost(Config.apiUrl + uploadUrl);
 
 		final String fileName = UUID.randomUUID().toString().replace("-", "");
 		final HttpEntity mulitpartEntity = MultipartEntityBuilder.create()
-		.addTextBody("email", Config.email, Util.TEXT_PLAIN)
-		.addBinaryBody("file", pattern.getBytes(Charsets.UTF_8), Util.TEXT_PLAIN, fileName).build();
+				.addTextBody("email", Config.email, Util.TEXT_PLAIN)
+				.addBinaryBody("file", pattern.getBytes(Charsets.UTF_8), Util.TEXT_PLAIN, fileName).build();
 		httpPost.setEntity(mulitpartEntity);
 		final CloseableHttpResponse response = Util.getHttpclient().execute(httpPost);
 		try {

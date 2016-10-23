@@ -9,32 +9,32 @@ import buttplugbot.telegrambot.HushPlugBot.StatusUpdateMessage;
 import buttplugbot.telegrambot.model.StatusUpdate;
 
 public class StatusMessageUpdater {
-	
+
 	private volatile StatusUpdate lastUpdate = null;
-	
+
 	private final Set<StatusUpdateMessage> statusUpdateMessageSet = new ConcurrentSkipListSet<>();
-	
+
 	public void update(StatusUpdate update) {
 		if (update.equals(lastUpdate)) {
 			return;
 		}
 		lastUpdate = update;
-		List<StatusUpdateMessage> remove = new ArrayList<>();
-		for (StatusUpdateMessage statusUpdateMessage : statusUpdateMessageSet) {
+		final List<StatusUpdateMessage> remove = new ArrayList<>();
+		for (final StatusUpdateMessage statusUpdateMessage : statusUpdateMessageSet) {
 			statusUpdateMessage.update(update, () -> {
 				remove.add(statusUpdateMessage);
 			});
 		}
-		for (StatusUpdateMessage statusUpdateMessage : remove) {
+		for (final StatusUpdateMessage statusUpdateMessage : remove) {
 			statusUpdateMessageSet.remove(statusUpdateMessage);
 		}
 	}
-	
+
 	public void addStatusUpdateMessage(StatusUpdateMessage statusUpdateMessage, boolean force) {
 		if (force && statusUpdateMessageSet.contains(statusUpdateMessage)) {
 			statusUpdateMessageSet.remove(statusUpdateMessage);
 		}
-		boolean added = statusUpdateMessageSet.add(statusUpdateMessage);
+		final boolean added = statusUpdateMessageSet.add(statusUpdateMessage);
 		if (added && lastUpdate != null) {
 			statusUpdateMessage.update(lastUpdate, () -> {
 				statusUpdateMessageSet.remove(statusUpdateMessage);

@@ -29,8 +29,8 @@ public class Plug {
 
 		@Override
 		public String toString() {
-			long value = getValue();
-			long temp = getTempValue();
+			final long value = getValue();
+			final long temp = getTempValue();
 			if (value == temp) {
 				return String.format(Locale.US, "∿  %.1f s", intervalToSeconds(value));
 			} else {
@@ -44,8 +44,8 @@ public class Plug {
 
 		@Override
 		public String toString() {
-			long value = getValue();
-			long temp = getTempValue();
+			final long value = getValue();
+			final long temp = getTempValue();
 			if (value == temp) {
 				return String.format(Locale.US, "%d %%", asPercentage(value));
 			} else {
@@ -147,7 +147,7 @@ public class Plug {
 
 	@Override
 	public String toString() {
-		StringBuilder b = new StringBuilder();
+		final StringBuilder b = new StringBuilder();
 		b.append("*Buttplug of ").append(getName()).append("*\n");
 		if (!isOnline()) {
 			b.append("Plug not connected, User " + (isUserOnline() ? "online" : " offline"));

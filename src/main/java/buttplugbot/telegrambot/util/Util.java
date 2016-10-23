@@ -7,9 +7,9 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 
 public class Util {
-	
+
 	private static final CloseableHttpClient httpclient = HttpClients.createDefault();
-	
+
 	public static final ContentType TEXT_PLAIN = ContentType.create("text/plain", Charsets.UTF_8);
 
 	private static final String w = "_w";
@@ -20,15 +20,14 @@ public class Util {
 		email = StringUtils.replace(email, "!!!", "@");
 		return email;
 	}
-	
+
 	public static String emailToJidUser(String email) {
-		String jid = StringUtils.replace(email, "@", "!!!");
+		final String jid = StringUtils.replace(email, "@", "!!!");
 		return jid + w;
 	}
-	
+
 	public static CloseableHttpClient getHttpclient() {
 		return httpclient;
 	}
-
 
 }

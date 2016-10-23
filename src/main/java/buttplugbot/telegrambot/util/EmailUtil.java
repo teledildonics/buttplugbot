@@ -38,7 +38,7 @@ public class EmailUtil {
 			} finally {
 				response.close();
 			}
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			logger.warn("Failed to check email {} ", email, e);
 			return null;
 		}
