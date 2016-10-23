@@ -1,7 +1,6 @@
 package buttplugbot.telegrambot.dao;
 
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -9,9 +8,14 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 
+import org.apache.commons.codec.Charsets;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.util.EntityUtils;
 import org.jivesoftware.smack.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +26,7 @@ import com.google.gson.reflect.TypeToken;
 import buttplugbot.telegrambot.Config;
 import buttplugbot.telegrambot.model.NormalResponse;
 import buttplugbot.telegrambot.model.Pattern;
+import buttplugbot.telegrambot.util.Util;
 
 public class PatternDao {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -69,75 +74,24 @@ public class PatternDao {
 
 	private Pattern uploadPattern(int i, int a) throws Exception {
 		final String pattern = createPattern(i, a);
-		final Map<String, String> hashMap = new HashMap<>();
-		hashMap.put("email", Config.email);
 		final String uploadUrl = "/wear/chat/saveFile/pattern";
-		final byte[] bArr = pattern.getBytes();
-		final String fileName = UUID.randomUUID().toString().replace("-", "");
+		final HttpPost httpPost = new HttpPost(Config.apiUrl+uploadUrl);
 
-		final String uuid = UUID.randomUUID().toString();
-		final String dash = "--";
-		final String newLine = "\r\n";
-		final String charset = "UTF-8";
-		final HttpURLConnection httpURLConnection = (HttpURLConnection) new URL(Config.apiUrl + uploadUrl)
-				.openConnection();
+		final String fileName = UUID.randomUUID().toString().replace("-", "");
+		final HttpEntity mulitpartEntity = MultipartEntityBuilder.create()
+		.addTextBody("email", Config.email, Util.TEXT_PLAIN)
+		.addBinaryBody("file", pattern.getBytes(Charsets.UTF_8), Util.TEXT_PLAIN, fileName).build();
+		httpPost.setEntity(mulitpartEntity);
+		final CloseableHttpResponse response = Util.getHttpclient().execute(httpPost);
 		try {
-			httpURLConnection.setReadTimeout(15000);
-			httpURLConnection.setDoInput(true);
-			httpURLConnection.setDoOutput(true);
-			httpURLConnection.setUseCaches(false);
-			httpURLConnection.setRequestMethod("POST");
-			httpURLConnection.setRequestProperty("connection", "keep-alive");
-			httpURLConnection.setRequestProperty("Charsert", "UTF-8");
-			httpURLConnection.setRequestProperty("Content-Type", "multipart/form-data" + ";boundary=" + uuid);
-			final StringBuilder stringBuilder = new StringBuilder();
-			for (final Entry<String, String> entry : hashMap.entrySet()) {
-				stringBuilder.append(dash);
-				stringBuilder.append(uuid);
-				stringBuilder.append(newLine);
-				stringBuilder.append("Content-Disposition: form-data; name=\"" + entry.getKey() + "\"" + newLine);
-				stringBuilder.append("Content-Type: text/plain; charset=" + charset + newLine);
-				stringBuilder.append("Content-Transfer-Encoding: 8bit" + newLine);
-				stringBuilder.append(newLine);
-				stringBuilder.append(entry.getValue());
-				stringBuilder.append(newLine);
-			}
-			final DataOutputStream dataOutputStream = new DataOutputStream(httpURLConnection.getOutputStream());
-			try {
-				dataOutputStream.write(stringBuilder.toString().getBytes());
-				final StringBuilder stringBuilder2 = new StringBuilder();
-				stringBuilder2.append(dash);
-				stringBuilder2.append(uuid);
-				stringBuilder2.append(newLine);
-				stringBuilder2.append(
-						"Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"" + newLine);
-				stringBuilder2.append("Content-Type: multipart/form-data; charset=" + charset + newLine);
-				stringBuilder2.append(newLine);
-				dataOutputStream.write(stringBuilder2.toString().getBytes());
-				dataOutputStream.write(bArr, 0, bArr.length);
-				dataOutputStream.write(newLine.getBytes());
-				dataOutputStream.write((dash + uuid + dash + newLine).getBytes());
-				dataOutputStream.flush();
-				if (httpURLConnection.getResponseCode() == 200) {
-					final BufferedReader bufferedReader = new BufferedReader(
-							new InputStreamReader(httpURLConnection.getInputStream()));
-					String line;
-					final StringBuffer stringBuffer = new StringBuffer();
-					while (true) {
-						line = bufferedReader.readLine();
-						if (line == null) {
-							break;
-						}
-						stringBuffer.append(line);
-					}
-					final NormalResponse response = gson.fromJson(stringBuffer.toString(), NormalResponse.class);
-					return new Pattern(fileName, response.getMessage(), timer(getLength(i)));
-				}
-			} finally {
-				dataOutputStream.close();
+			if (response.getStatusLine().getStatusCode() == 200) {
+				final HttpEntity entity = response.getEntity();
+				final String json = EntityUtils.toString(entity);
+				final NormalResponse normalResponse = gson.fromJson(json, NormalResponse.class);
+				return new Pattern(fileName, normalResponse.getMessage(), timer(getLength(i)));
 			}
 		} finally {
-			httpURLConnection.disconnect();
+			response.close();
 		}
 		throw new Exception("Failed to upload file");
 	}

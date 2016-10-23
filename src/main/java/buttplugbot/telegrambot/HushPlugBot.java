@@ -37,6 +37,7 @@ import buttplugbot.telegrambot.dao.PlugDao;
 import buttplugbot.telegrambot.model.Plug;
 import buttplugbot.telegrambot.model.StatusUpdate;
 import buttplugbot.telegrambot.smack.SmackConnection;
+import buttplugbot.telegrambot.util.EmailUtil;
 
 public class HushPlugBot extends TelegramLongPollingCommandBot {
 
@@ -163,9 +164,14 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 
 	private void registerEmail(AbsSender absSender, Message message) {
 		String email = message.getText();
-		final String jid = connection.connectToUser(email);
-		if (jid == null) {
+		String checkedEmail = EmailUtil.check(email);
+		if (checkedEmail == null) {
 			sendMessage(absSender, message.getChat(), "Unable to send friend request to " + email);
+			return;
+		}
+		final String jid = connection.connectToUser(checkedEmail);
+		if (jid == null) {
+			sendMessage(absSender, message.getChat(), "Unable to send friend request to " + checkedEmail);
 			return;
 		}
 		Plug plug = plugDao.getPlugByUserId(message.getFrom().getId());

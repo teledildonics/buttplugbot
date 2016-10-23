@@ -1,8 +1,16 @@
 package buttplugbot.telegrambot.util;
 
+import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 
 public class Util {
+	
+	private static final CloseableHttpClient httpclient = HttpClients.createDefault();
+	
+	public static final ContentType TEXT_PLAIN = ContentType.create("text/plain", Charsets.UTF_8);
 
 	private static final String w = "_w";
 
@@ -16,6 +24,10 @@ public class Util {
 	public static String emailToJidUser(String email) {
 		String jid = StringUtils.replace(email, "@", "!!!");
 		return jid + w;
+	}
+	
+	public static CloseableHttpClient getHttpclient() {
+		return httpclient;
 	}
 
 
