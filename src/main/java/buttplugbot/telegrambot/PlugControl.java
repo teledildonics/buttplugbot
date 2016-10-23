@@ -65,7 +65,7 @@ public class PlugControl {
 	}
 
 	public String processMessage(Integer senderId, String message) {
-		if (!plug.isOnline()) {
+		if (!plug.isOnline() && !message.contains("trace")) {
 			return "Vibrator is offline.";
 		}
 
@@ -93,16 +93,19 @@ public class PlugControl {
 				plug.setTrace(Trace.NO_TRACE);
 				plugDao.storeDB();
 			}
+			break;
 		case "singletrace":
 			if (plug.getUserId() == senderId) {
 				plug.setTrace(Trace.SINGLE_TRACE);
 				plugDao.storeDB();
 			}
+			break;
 		case "fulltrace":
 			if (plug.getUserId() == senderId) {
 				plug.setTrace(Trace.FULL_TRACE);
 				plugDao.storeDB();
 			}
+			break;
 		}
 		return null;
 	}

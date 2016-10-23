@@ -147,7 +147,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			plug.setUserChatId(query.getMessage().getChatId());
 			plugDao.storeDB();
 		}
-		if (plug.getTrace() == Trace.FULL_TRACE) {
+		if (!command.contains("trace") && plug.getTrace() == Trace.FULL_TRACE) {
 			final String traceMessage = "User " + name + " pressed the command " + command;
 			if (plug.getUserChatId() != null) {
 				try {
@@ -315,7 +315,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			answer.setChatId(chat.getId().toString());
 			answer.setText("Do you want to be notified, if someone presses a button?\n"
 					+ "No trace (default) won't show you any informations about who pressed the buttons.\n"
-					+ "Single trace means, that the last person that pressed a button will be shown in the output.\n"
+					+ "Single trace means, that the last person, who pressed a button, will be shown in the output.\n"
 					+ "Full trace will send you a message everytime someone presses a button.\n"
 					+ "Your current setting is: " + plug.getTraceAsString());
 			try {

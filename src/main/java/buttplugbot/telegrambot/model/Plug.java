@@ -194,7 +194,7 @@ public class Plug {
 		final StringBuilder b = new StringBuilder();
 		b.append("*Buttplug of ").append(getName()).append("* (" + getTraceAsString() + ")\n");
 		if (!isOnline()) {
-			b.append("Plug not connected, User " + (isUserOnline() ? "online" : " offline"));
+			b.append("Plug not connected, User " + (isUserOnline() ? "online" : "offline"));
 		} else {
 			if (state == State.IDLE) {
 				b.append("Idling ").append(getAmplitude()).append("\n");
@@ -202,7 +202,7 @@ public class Plug {
 			}
 			if (state == State.BUZZ) {
 				b.append("Buzzing ").append(getAmplitude());
-				if (getTrace() == Trace.SINGLE_TRACE || getTrace() == Trace.FULL_TRACE && lastInteractedUser != null) {
+				if ((getTrace() == Trace.SINGLE_TRACE || getTrace() == Trace.FULL_TRACE) && lastInteractedUser != null) {
 					b.append(" by ").append(lastInteractedUser);
 				}
 				b.append("\n");
@@ -211,7 +211,7 @@ public class Plug {
 			if (state == State.SINE) {
 				b.append("Playing sine pattern ").append(getAmplitude()).append(" for ~")
 						.append(Math.ceil(getRemainingSeconds() / 5) * 5).append(" s");
-				if (getTrace() == Trace.SINGLE_TRACE || getTrace() == Trace.FULL_TRACE && lastInteractedUser != null) {
+				if ((getTrace() == Trace.SINGLE_TRACE || getTrace() == Trace.FULL_TRACE) && lastInteractedUser != null) {
 					b.append(" by ").append(lastInteractedUser);
 				}
 				b.append("\n");
