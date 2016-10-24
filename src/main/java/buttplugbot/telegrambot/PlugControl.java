@@ -96,12 +96,18 @@ public class PlugControl {
 			break;
 		case "singletrace":
 			if (plug.getUserId() == senderId) {
+				if (plug.getTrace() == Trace.NO_TRACE) {
+					plug.setLastInteractedUser(null);
+				}
 				plug.setTrace(Trace.SINGLE_TRACE);
 				plugDao.storeDB();
 			}
 			break;
 		case "fulltrace":
 			if (plug.getUserId() == senderId) {
+				if (plug.getTrace() == Trace.NO_TRACE) {
+					plug.setLastInteractedUser(null);
+				}
 				plug.setTrace(Trace.FULL_TRACE);
 				plugDao.storeDB();
 			}
