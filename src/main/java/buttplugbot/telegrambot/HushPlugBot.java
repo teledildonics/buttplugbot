@@ -1,6 +1,7 @@
 package buttplugbot.telegrambot;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,6 +16,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.api.methods.AnswerCallbackQuery;
+import org.telegram.telegrambots.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.api.methods.BotApiMethod;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageText;
@@ -23,6 +25,10 @@ import org.telegram.telegrambots.api.objects.Chat;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.api.objects.User;
+import org.telegram.telegrambots.api.objects.inlinequery.ChosenInlineQuery;
+import org.telegram.telegrambots.api.objects.inlinequery.InlineQuery;
+import org.telegram.telegrambots.api.objects.inlinequery.inputmessagecontent.InputTextMessageContent;
+import org.telegram.telegrambots.api.objects.inlinequery.result.InlineQueryResultArticle;
 import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.bots.AbsSender;
@@ -100,6 +106,66 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			final CallbackQuery query = update.getCallbackQuery();
 			handleCallbackQuery(query);
 		}
+		if (update.hasInlineQuery()) {
+			final InlineQuery query = update.getInlineQuery();
+			handleInlineQuery(query);
+		}
+		if (update.hasChosenInlineQuery()) {
+			final ChosenInlineQuery query = update.getChosenInlineQuery();
+			handleChosenInlineQuery(query);
+		}
+	}
+
+	private void handleChosenInlineQuery(ChosenInlineQuery query) {
+		final Plug plug = plugDao.getPlugByUserId(query.getFrom().getId());
+		if (plug != null && !StringUtils.isEmpty(query.getInlineMessageId())) {
+			PlugControl plugControl = plugs.get(plug.getId());
+			if (plugControl == null) {
+				plugControl = new PlugControl(plug, connection, patternDao, plugDao, new TraceSender());
+				plugs.put(plug.getId(), plugControl);
+			}
+			plugControl.getStatusMessageUpdater()
+					.addStatusUpdateMessage(new StatusUpdateMessageSender(query.getInlineMessageId()), false);
+		}
+	}
+
+	private void handleInlineQuery(InlineQuery query) {
+		final AnswerInlineQuery answer = new AnswerInlineQuery();
+		answer.setPersonal(true);
+		answer.setInlineQueryId(query.getId());
+		final Plug plug = plugDao.getPlugByUserId(query.getFrom().getId());
+		if (plug == null) {
+			answer.setSwitchPmText("Register your plug");
+		} else {
+			int hours = -1;
+			if (query.hasQuery() && query.getQuery().length() > 0) {
+				try {
+					hours = Integer.parseInt(query.getQuery());
+				} catch (final NumberFormatException e) {
+					logger.info("Unable to parse number: {}", query.getQuery(), e);
+				}
+			}
+			final String id;
+			if (hours > 0) {
+				id = plugDao.addTemporary(plug, hours);
+			} else {
+				id = plug.getId();
+			}
+			final InlineKeyboardMarkup replyMarkup = createKeyboard(id);
+			final InlineQueryResultArticle article = new InlineQueryResultArticle();
+			article.setTitle("Buttplug of " + plug.getName());
+			article.setReplyMarkup(replyMarkup);
+			article.setId("plug_" + id);
+			final InputTextMessageContent textMessageContent = new InputTextMessageContent();
+			textMessageContent.setMessageText("*Buttplug*\nConnecting...");
+			article.setInputMessageContent(textMessageContent);
+			answer.setResults(Collections.singletonList(article));
+		}
+		try {
+			answerInlineQuery(answer);
+		} catch (final TelegramApiException e) {
+			logger.warn("Failed to send message: {}", e, e);
+		}
 	}
 
 	private void handleCallbackQuery(final CallbackQuery query) {
@@ -120,8 +186,14 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 					plugs.put(plug.getId(), plugControl);
 				}
 				if (!command.contains("trace")) {
-					plugControl.getStatusMessageUpdater().addStatusUpdateMessage(new StatusUpdateMessageSender(
-							query.getMessage().getChatId(), query.getMessage().getMessageId()), false);
+					if (query.getMessage() != null) {
+						plugControl.getStatusMessageUpdater().addStatusUpdateMessage(new StatusUpdateMessageSender(
+								query.getMessage().getChatId(), query.getMessage().getMessageId()), false);
+					}
+					if (query.getInlineMessageId() != null) {
+						plugControl.getStatusMessageUpdater().addStatusUpdateMessage(
+								new StatusUpdateMessageSender(query.getInlineMessageId()), false);
+					}
 				}
 				answerText = plugControl.processMessage(query.getFrom().getId(), command);
 				traceCommand(query, command, plug);
@@ -450,9 +522,18 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 
 		private final Integer messageId;
 
+		private final String inlineMessageId;
+
 		public StatusUpdateMessageSender(Long chatId, Integer messageId) {
 			this.chatId = chatId;
 			this.messageId = messageId;
+			this.inlineMessageId = null;
+		}
+
+		public StatusUpdateMessageSender(String inlineMessageId) {
+			this.chatId = null;
+			this.messageId = null;
+			this.inlineMessageId = inlineMessageId;
 		}
 
 		public void update(StatusUpdate status, Runnable remove) {
@@ -472,8 +553,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 
 					@Override
 					public void onError(BotApiMethod<Message> method, JSONObject jsonObject) {
-						logger.warn(
-								new TelegramApiRequestException("Failed to send message", jsonObject).toString());
+						logger.warn(new TelegramApiRequestException("Failed to send message", jsonObject).toString());
 						remove.run();
 					}
 
@@ -492,7 +572,9 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		public int hashCode() {
 			final int prime = 31;
 			int result = 1;
+			result = prime * result + getOuterType().hashCode();
 			result = prime * result + (chatId == null ? 0 : chatId.hashCode());
+			result = prime * result + (inlineMessageId == null ? 0 : inlineMessageId.hashCode());
 			return result;
 		}
 
@@ -508,6 +590,9 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 				return false;
 			}
 			final StatusUpdateMessageSender other = (StatusUpdateMessageSender) obj;
+			if (!getOuterType().equals(other.getOuterType())) {
+				return false;
+			}
 			if (chatId == null) {
 				if (other.chatId != null) {
 					return false;
@@ -515,12 +600,25 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			} else if (!chatId.equals(other.chatId)) {
 				return false;
 			}
+			if (inlineMessageId == null) {
+				if (other.inlineMessageId != null) {
+					return false;
+				}
+			} else if (!inlineMessageId.equals(other.inlineMessageId)) {
+				return false;
+			}
 			return true;
 		}
 
 		@Override
 		public int compareTo(StatusUpdateMessageSender o) {
-			return Long.compare(chatId, o.chatId);
+			final String a = chatId == null ? "i_" + inlineMessageId : "c_" + chatId;
+			final String b = o.chatId == null ? "i_" + o.inlineMessageId : "c_" + o.chatId;
+			return a.compareTo(b);
+		}
+
+		private HushPlugBot getOuterType() {
+			return HushPlugBot.this;
 		}
 	}
 
