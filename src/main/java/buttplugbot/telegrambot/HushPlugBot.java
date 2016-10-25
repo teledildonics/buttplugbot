@@ -208,7 +208,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 				"You have been registered now.\n" + "You can type /share in any group chat, that contains this bot. "
 						+ "You can limit the usage time by typing for example /share 2 to limit it to 2 hours.\n\n"
 						+ "I created an unlimited id for you: /plug " + plug.getId() + "\n"
-						+ "If you share this id with someone, he can view and share your controls, until you use the /unregister command.\n"
+						+ "If you share this id with someone, they can view and share your controls, until you use the /unregister command.\n"
 						+ "You can create temporary ids with the /temporary command.");
 	}
 
