@@ -392,8 +392,8 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		rows.get(0).add(
 				new InlineKeyboardButton().setText("💓 " + Config.vibrationLength + "s").setCallbackData(id + "|sine"));
 		rows.add(new ArrayList<>());
-		rows.get(1).add(new InlineKeyboardButton().setText("∿ faster").setCallbackData(id + "|interval-"));
 		rows.get(1).add(new InlineKeyboardButton().setText("∿ slower").setCallbackData(id + "|interval+"));
+		rows.get(1).add(new InlineKeyboardButton().setText("∿ faster").setCallbackData(id + "|interval-"));
 		rows.add(new ArrayList<>());
 		rows.get(2).add(new InlineKeyboardButton().setText("- 10 %").setCallbackData(id + "|amplitude-"));
 		rows.get(2).add(new InlineKeyboardButton().setText("+ 10 %").setCallbackData(id + "|amplitude+"));
