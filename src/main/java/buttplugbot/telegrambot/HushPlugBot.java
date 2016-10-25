@@ -538,8 +538,12 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 
 		public void update(StatusUpdate status, Runnable remove) {
 			final EditMessageText edit = new EditMessageText();
-			edit.setChatId(Long.toString(chatId));
-			edit.setMessageId(messageId);
+			if (inlineMessageId == null) {
+				edit.setChatId(Long.toString(chatId));
+				edit.setMessageId(messageId);
+			} else {
+				edit.setInlineMessageId(inlineMessageId);
+			}
 			edit.setText(status.getMessage());
 			edit.setReplyMarkup(createKeyboard(status.getId()));
 			edit.enableMarkdown(true);
