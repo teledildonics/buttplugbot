@@ -153,7 +153,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			}
 			final InlineKeyboardMarkup replyMarkup = createKeyboard(id);
 			final InlineQueryResultArticle article = new InlineQueryResultArticle();
-			article.setTitle("Buttplug of " + plug.getName());
+			article.setTitle("Share your plug " + (hours > 0 ? "for " + hours + " hours" : "indefinitely"));
 			article.setReplyMarkup(replyMarkup);
 			article.setId("plug_" + id);
 			final InputTextMessageContent textMessageContent = new InputTextMessageContent();
