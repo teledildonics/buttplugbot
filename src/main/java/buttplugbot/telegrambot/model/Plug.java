@@ -1,6 +1,5 @@
 package buttplugbot.telegrambot.model;
 
-import java.security.SecureRandom;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -12,8 +11,6 @@ public class Plug {
 	public static enum Trace {
 		NO_TRACE, SINGLE_TRACE, FULL_TRACE
 	}
-
-	private final static SecureRandom sr = new SecureRandom();
 
 	private final long id;
 
@@ -72,16 +69,8 @@ public class Plug {
 
 	private volatile String lastInteractedUser = null;
 
-	private static long createId() {
-		long id = sr.nextLong();
-		while (id < 0) {
-			id = sr.nextLong();
-		}
-		return id;
-	}
-
-	public Plug(String targetJid, long userId) {
-		this(createId(), targetJid, userId, "unknown", Trace.NO_TRACE, null);
+	public Plug(long id, String targetJid, long userId) {
+		this(id, targetJid, userId, "unknown", Trace.NO_TRACE, null);
 	}
 
 	public Plug(long id, String targetJid, long userId, String name, Trace trace, Long userChatId) {

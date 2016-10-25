@@ -197,7 +197,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		}
 		plug = plugDao.getPlugByEmail(jid);
 		if (plug == null) {
-			plug = new Plug(jid, message.getFrom().getId());
+			plug = new Plug(plugDao.createId(), jid, message.getFrom().getId());
 			plug.setName(createName(message.getFrom()));
 			plug.setUserChatId(message.getChatId());
 			plugDao.add(plug);

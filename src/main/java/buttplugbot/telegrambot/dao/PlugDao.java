@@ -2,6 +2,7 @@ package buttplugbot.telegrambot.dao;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -20,6 +21,8 @@ import buttplugbot.telegrambot.model.Plug;
 import buttplugbot.telegrambot.util.PlugSerializer;
 
 public class PlugDao {
+	private final SecureRandom sr = new SecureRandom();
+	
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private final Map<String, Plug> plugsById = new ConcurrentHashMap<>();
@@ -54,6 +57,15 @@ public class PlugDao {
 
 	public Collection<Plug> getAllPlugs() {
 		return plugsByEmails.values();
+	}
+	
+	public long createId() {
+		long id = sr.nextLong();
+		while (id < 0 || plugsById.containsKey(Long.toHexString(id))) {
+			id = sr.nextLong();
+		}
+		plugsById.put(Long.toHexString(id), null);
+		return id;
 	}
 
 	public synchronized void loadDB() {
