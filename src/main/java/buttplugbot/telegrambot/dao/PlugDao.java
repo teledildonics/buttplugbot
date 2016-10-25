@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -123,15 +124,19 @@ public class PlugDao {
 		return id;
 	}
 
-	public void cleanTemporary() {
+	public Map<String, Plug> cleanTemporary() {
+		final Map<String, Plug> deleted = new HashMap<>();
 		final Iterator<Entry<String, TemporaryPlug>> it = temporaryPlugs.entrySet().iterator();
 		final long now = System.currentTimeMillis();
 		while (it.hasNext()) {
-			final TemporaryPlug temporaryPlug = it.next().getValue();
+			final Entry<String, TemporaryPlug> entry = it.next();
+			final TemporaryPlug temporaryPlug = entry.getValue();
 			if (temporaryPlug.getTimeout() < now) {
+				deleted.put(entry.getKey(), temporaryPlug.getPlug());
 				it.remove();
 			}
 		}
+		return deleted;
 	}
 
 }

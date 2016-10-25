@@ -19,14 +19,10 @@ public class StatusMessageUpdater {
 			return;
 		}
 		lastUpdate = update;
-		final List<StatusUpdateMessageSender> remove = new ArrayList<>();
 		for (final StatusUpdateMessageSender statusUpdateMessageSender : statusUpdateMessageSenderSet) {
 			statusUpdateMessageSender.update(update, () -> {
-				remove.add(statusUpdateMessageSender);
+				statusUpdateMessageSenderSet.remove(statusUpdateMessageSender);
 			});
-		}
-		for (final StatusUpdateMessageSender statusUpdateMessage : remove) {
-			statusUpdateMessageSenderSet.remove(statusUpdateMessage);
 		}
 	}
 
@@ -41,5 +37,18 @@ public class StatusMessageUpdater {
 			});
 		}
 
+	}
+
+	public void removeByPlugId(String key) {
+		final List<StatusUpdateMessageSender> remove = new ArrayList<>();
+		for (final StatusUpdateMessageSender statusUpdateMessageSender : statusUpdateMessageSenderSet) {
+			if (statusUpdateMessageSender.getPlugId().equals(key)) {
+				remove.add(statusUpdateMessageSender);
+			}
+		}
+		for (final StatusUpdateMessageSender statusUpdateMessage : remove) {
+			statusUpdateMessage.disable();
+			statusUpdateMessageSenderSet.remove(statusUpdateMessage);
+		}
 	}
 }

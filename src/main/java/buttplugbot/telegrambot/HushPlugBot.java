@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -79,10 +80,20 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			updateStatus++;
 			if (updateStatus % 300 == 0) {
 				connection.updateStatus();
-				plugDao.cleanTemporary();
+				cleanupTemporary();
 			}
 		}, 100, 100, TimeUnit.MILLISECONDS);
 
+	}
+
+	private void cleanupTemporary() {
+		Map<String, Plug> deleted = plugDao.cleanTemporary();
+		for (Entry<String, Plug> entry : deleted.entrySet()) {
+			PlugControl plugControl = plugs.get(entry.getValue().getId());
+			if (plugControl != null) {
+				plugControl.getStatusMessageUpdater().removeByPlugId(entry.getKey());
+			}
+		}
 	}
 
 	@Override
@@ -124,8 +135,9 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 				plugControl = new PlugControl(plug, connection, patternDao, plugDao, new TraceSender());
 				plugs.put(plug.getId(), plugControl);
 			}
+			String id = StringUtils.substringAfter(query.getQuery(), "plug_");
 			plugControl.getStatusMessageUpdater()
-					.addStatusUpdateMessage(new StatusUpdateMessageSender(query.getInlineMessageId()), false);
+					.addStatusUpdateMessage(new StatusUpdateMessageSender(query.getInlineMessageId(), id), false);
 		}
 	}
 
@@ -188,11 +200,11 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 				if (!command.contains("trace")) {
 					if (query.getMessage() != null) {
 						plugControl.getStatusMessageUpdater().addStatusUpdateMessage(new StatusUpdateMessageSender(
-								query.getMessage().getChatId(), query.getMessage().getMessageId()), false);
+								query.getMessage().getChatId(), query.getMessage().getMessageId(), plugId), false);
 					}
 					if (query.getInlineMessageId() != null) {
 						plugControl.getStatusMessageUpdater().addStatusUpdateMessage(
-								new StatusUpdateMessageSender(query.getInlineMessageId()), false);
+								new StatusUpdateMessageSender(query.getInlineMessageId(), plugId), false);
 					}
 				}
 				answerText = plugControl.processMessage(query.getFrom().getId(), command);
@@ -446,7 +458,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		final Message message = sendButtons(absSender, chat, plug, id);
 		if (message != null) {
 			plugControl.getStatusMessageUpdater().addStatusUpdateMessage(
-					new StatusUpdateMessageSender(message.getChatId(), message.getMessageId()), true);
+					new StatusUpdateMessageSender(message.getChatId(), message.getMessageId(), id), true);
 		}
 	}
 
@@ -523,17 +535,21 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		private final Integer messageId;
 
 		private final String inlineMessageId;
+		
+		private final String plugId;
 
-		public StatusUpdateMessageSender(Long chatId, Integer messageId) {
+		public StatusUpdateMessageSender(Long chatId, Integer messageId, String plugId) {
 			this.chatId = chatId;
 			this.messageId = messageId;
 			this.inlineMessageId = null;
+			this.plugId = plugId;
 		}
 
-		public StatusUpdateMessageSender(String inlineMessageId) {
+		public StatusUpdateMessageSender(String inlineMessageId, String plugId) {
 			this.chatId = null;
 			this.messageId = null;
 			this.inlineMessageId = inlineMessageId;
+			this.plugId = plugId;
 		}
 
 		public void update(StatusUpdate status, Runnable remove) {
@@ -545,7 +561,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 				edit.setInlineMessageId(inlineMessageId);
 			}
 			edit.setText(status.getMessage());
-			edit.setReplyMarkup(createKeyboard(status.getId()));
+			edit.setReplyMarkup(createKeyboard(plugId));
 			edit.enableMarkdown(true);
 			try {
 				editMessageTextAsync(edit, new SentCallback<Message>() {
@@ -565,6 +581,39 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 					public void onException(BotApiMethod<Message> method, Exception exception) {
 						logger.warn("Failed to send message", exception);
 						remove.run();
+					}
+				});
+			} catch (final TelegramApiException e) {
+				logger.warn("Failed to send message", e);
+			}
+		}
+		
+		public void disable() {
+			final EditMessageText edit = new EditMessageText();
+			if (inlineMessageId == null) {
+				edit.setChatId(Long.toString(chatId));
+				edit.setMessageId(messageId);
+			} else {
+				edit.setInlineMessageId(inlineMessageId);
+			}
+			edit.setText("Timed out...");
+			edit.enableMarkdown(true);
+			try {
+				editMessageTextAsync(edit, new SentCallback<Message>() {
+
+					@Override
+					public void onResult(BotApiMethod<Message> method, JSONObject jsonObject) {
+
+					}
+
+					@Override
+					public void onError(BotApiMethod<Message> method, JSONObject jsonObject) {
+						logger.warn(new TelegramApiRequestException("Failed to send message", jsonObject).toString());
+					}
+
+					@Override
+					public void onException(BotApiMethod<Message> method, Exception exception) {
+						logger.warn("Failed to send message", exception);
 					}
 				});
 			} catch (final TelegramApiException e) {
@@ -623,6 +672,10 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 
 		private HushPlugBot getOuterType() {
 			return HushPlugBot.this;
+		}
+		
+		public String getPlugId() {
+			return plugId;
 		}
 	}
 
