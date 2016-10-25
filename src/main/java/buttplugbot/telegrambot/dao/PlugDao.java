@@ -4,9 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.jivesoftware.smack.util.FileUtils;
@@ -18,11 +20,12 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
 import buttplugbot.telegrambot.model.Plug;
+import buttplugbot.telegrambot.model.TemporaryPlug;
 import buttplugbot.telegrambot.util.PlugSerializer;
 
 public class PlugDao {
 	private final SecureRandom sr = new SecureRandom();
-	
+
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private final Map<String, Plug> plugsById = new ConcurrentHashMap<>();
@@ -30,6 +33,8 @@ public class PlugDao {
 	private final Map<String, Plug> plugsByEmails = new ConcurrentHashMap<>();
 
 	private final Map<Long, Plug> plugsByUsers = new ConcurrentHashMap<>();
+
+	private final Map<String, TemporaryPlug> temporaryPlugs = new ConcurrentHashMap<>();
 
 	private static final Gson gson;
 
@@ -48,6 +53,10 @@ public class PlugDao {
 	}
 
 	public Plug getPlugById(String id) {
+		TemporaryPlug temporaryPlug = temporaryPlugs.get(id);
+		if (temporaryPlug != null) {
+			return temporaryPlug.getPlug();
+		}
 		return plugsById.get(id);
 	}
 
@@ -58,13 +67,13 @@ public class PlugDao {
 	public Collection<Plug> getAllPlugs() {
 		return plugsByEmails.values();
 	}
-	
+
 	public long createId() {
 		long id = sr.nextLong();
-		while (id < 0 || plugsById.containsKey(Long.toHexString(id))) {
+		while (id < 0 || plugsById.containsKey(Long.toHexString(id))
+				|| temporaryPlugs.containsKey(Long.toHexString(id))) {
 			id = sr.nextLong();
 		}
-		plugsById.put(Long.toHexString(id), null);
 		return id;
 	}
 
@@ -104,6 +113,25 @@ public class PlugDao {
 		plugsById.remove(plug.getId());
 		plugsByUsers.remove(plug.getUserId());
 		storeDB();
+	}
+
+	public String addTemporary(Plug plug, int hours) {
+		long now = System.currentTimeMillis();
+		TemporaryPlug temporaryPlug = new TemporaryPlug(null, now + hours * 3600000);
+		String id = Long.toHexString(createId());
+		temporaryPlugs.put(id, temporaryPlug);
+		return id;
+	}
+
+	public void cleanTemporary() {
+		Iterator<Entry<String,TemporaryPlug>> it = temporaryPlugs.entrySet().iterator();
+		long now = System.currentTimeMillis();
+		while (it.hasNext()) {
+			TemporaryPlug temporaryPlug = it.next().getValue();
+			if (temporaryPlug.getTimeout() < now) {
+				it.remove();
+			}
+		}
 	}
 
 }
