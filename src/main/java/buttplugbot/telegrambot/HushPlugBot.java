@@ -302,7 +302,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			answer.setText("Do you want to be notified, if someone presses a button?\n"
 					+ "No trace (default) won't show you any informations about who pressed the buttons.\n"
 					+ "Single trace means, that the last person, who pressed a button, will be shown in the output.\n"
-					+ "Full trace will send you a message everytime someone presses a button.\n"
+					+ "Full trace will send you a message every time someone activates the plug.\n"
 					+ "Your current setting is: " + plug.getTraceAsString());
 			try {
 				logger.info("Sending message: {}", answer);
