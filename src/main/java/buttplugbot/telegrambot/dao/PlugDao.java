@@ -53,7 +53,7 @@ public class PlugDao {
 	}
 
 	public Plug getPlugById(String id) {
-		TemporaryPlug temporaryPlug = temporaryPlugs.get(id);
+		final TemporaryPlug temporaryPlug = temporaryPlugs.get(id);
 		if (temporaryPlug != null) {
 			return temporaryPlug.getPlug();
 		}
@@ -116,18 +116,18 @@ public class PlugDao {
 	}
 
 	public String addTemporary(Plug plug, int hours) {
-		long now = System.currentTimeMillis();
-		TemporaryPlug temporaryPlug = new TemporaryPlug(null, now + hours * 3600000);
-		String id = Long.toHexString(createId());
+		final long now = System.currentTimeMillis();
+		final TemporaryPlug temporaryPlug = new TemporaryPlug(null, now + hours * 3600000);
+		final String id = Long.toHexString(createId());
 		temporaryPlugs.put(id, temporaryPlug);
 		return id;
 	}
 
 	public void cleanTemporary() {
-		Iterator<Entry<String,TemporaryPlug>> it = temporaryPlugs.entrySet().iterator();
-		long now = System.currentTimeMillis();
+		final Iterator<Entry<String, TemporaryPlug>> it = temporaryPlugs.entrySet().iterator();
+		final long now = System.currentTimeMillis();
 		while (it.hasNext()) {
-			TemporaryPlug temporaryPlug = it.next().getValue();
+			final TemporaryPlug temporaryPlug = it.next().getValue();
 			if (temporaryPlug.getTimeout() < now) {
 				it.remove();
 			}

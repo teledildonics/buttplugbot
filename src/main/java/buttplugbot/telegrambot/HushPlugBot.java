@@ -204,12 +204,12 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			plug.setUserChatId(message.getChatId());
 			plugDao.add(plug);
 		}
-		sendMessage(absSender, message.getChat(), "You have been registered now.\n"
-				+ "You can type /share in any group chat, that contains this bot. "
-				+ "You can limit the usage time by typing for example /share 2 to limit it to 2 hours.\n"
-				+ "I created an unlimited id for you: /plug " + plug.getId() + "\n"
-				+ "If you share this with someone, he can view and share your controls until you use the /unregister command.\n"
-				+ "You can create temporary ids with the /temporary command.");
+		sendMessage(absSender, message.getChat(),
+				"You have been registered now.\n" + "You can type /share in any group chat, that contains this bot. "
+						+ "You can limit the usage time by typing for example /share 2 to limit it to 2 hours.\n\n"
+						+ "I created an unlimited id for you: /plug " + plug.getId() + "\n"
+						+ "If you share this id with someone, he can view and share your controls, until you use the /unregister command.\n"
+						+ "You can create temporary ids with the /temporary command.");
 	}
 
 	public class UnregisterCommand extends BotCommand {
@@ -251,13 +251,13 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			if (arguments.length > 0) {
 				try {
 					hours = Integer.parseInt(arguments[0]);
-				} catch (NumberFormatException e) {
+				} catch (final NumberFormatException e) {
 					logger.info("Unable to parse number: {}", arguments[0], e);
 				}
 			}
 			final Plug plug = plugDao.getPlugByUserId(user.getId());
 			if (hours > 0) {
-				String newId = plugDao.addTemporary(plug, hours);
+				final String newId = plugDao.addTemporary(plug, hours);
 				showButtonsForPlug(absSender, chat, plug, newId);
 			} else {
 				showButtonsForPlug(absSender, chat, plug, plug.getId());
@@ -278,13 +278,13 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			if (arguments.length > 0) {
 				try {
 					hours = Integer.parseInt(arguments[0]);
-				} catch (NumberFormatException e) {
+				} catch (final NumberFormatException e) {
 					logger.info("Unable to parse number: {}", arguments[0], e);
 				}
 			}
 			final Plug plug = plugDao.getPlugByUserId(user.getId());
 			if (hours > 0) {
-				String newId = plugDao.addTemporary(plug, hours);
+				final String newId = plugDao.addTemporary(plug, hours);
 				sendMessage(absSender, chat,
 						"Your temporary id is: /plug " + newId + "\nIt's valid for " + hours + " hours.");
 			} else {
