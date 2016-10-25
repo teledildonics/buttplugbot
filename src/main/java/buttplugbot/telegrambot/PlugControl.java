@@ -1,5 +1,6 @@
 package buttplugbot.telegrambot;
 
+import buttplugbot.telegrambot.HushPlugBot.TraceSender;
 import buttplugbot.telegrambot.dao.PatternDao;
 import buttplugbot.telegrambot.dao.PlugDao;
 import buttplugbot.telegrambot.model.Pattern;
@@ -20,13 +21,17 @@ public class PlugControl {
 
 	private final StatusMessageUpdater statusMessageUpdater;
 
+	private final TraceSender traceSender;
+
 	private final PlugDao plugDao;
 
-	public PlugControl(Plug plug, SmackConnection connection, PatternDao patternDao, PlugDao plugDao) {
+	public PlugControl(Plug plug, SmackConnection connection, PatternDao patternDao, PlugDao plugDao,
+			TraceSender traceSender) {
 		this.plug = plug;
 		this.connection = connection;
 		this.patternDao = patternDao;
 		this.plugDao = plugDao;
+		this.traceSender = traceSender;
 		this.plugRecipient = new PlugRecipient(connection, plug.getTargetJid());
 		this.statusMessageUpdater = new StatusMessageUpdater();
 	}
@@ -45,6 +50,7 @@ public class PlugControl {
 			plug.changeState(State.BUZZ, Config.buzzLength);
 			final long amplitude = plug.getAmplitude().commit();
 			plugRecipient.sendPowerLevel((amplitude + 4) * 5);
+			traceStateChange("buzz");
 		} else if ((plug.getState() == State.IDLE || plug.getRemainingSeconds() < 0)
 				&& plug.getNextState() == State.SINE) {
 			final long amplitude = plug.getAmplitude().commit();
@@ -56,12 +62,25 @@ public class PlugControl {
 				final Pattern pattern = patternDao.getPatternUrl(interval, amplitude);
 				plugRecipient.sendPattern(pattern);
 			}
+			traceStateChange("sine pattern");
 		} else if (plug.getState() != State.IDLE && plug.getRemainingSeconds() < 0) {
 			plug.changeState(State.IDLE, 0);
 			plugRecipient.sendPowerLevel(0);
 		}
 
 		statusMessageUpdater.update(new StatusUpdate(plug));
+	}
+
+	private void traceStateChange(String state) {
+		final Trace trace = plug.getTrace();
+		final String userName = plug.getLastInteractedUser();
+		if (trace == Trace.FULL_TRACE && userName != null) {
+			final String traceMessage = "User " + userName + " activated " + state;
+			final Long userChatId = plug.getUserChatId();
+			if (userChatId != null) {
+				traceSender.sendTrace(userChatId, traceMessage);
+			}
+		}
 	}
 
 	public String processMessage(Integer senderId, String message) {

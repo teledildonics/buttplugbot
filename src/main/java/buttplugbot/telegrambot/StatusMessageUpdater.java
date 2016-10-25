@@ -5,39 +5,39 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-import buttplugbot.telegrambot.HushPlugBot.StatusUpdateMessage;
+import buttplugbot.telegrambot.HushPlugBot.StatusUpdateMessageSender;
 import buttplugbot.telegrambot.model.StatusUpdate;
 
 public class StatusMessageUpdater {
 
 	private volatile StatusUpdate lastUpdate = null;
 
-	private final Set<StatusUpdateMessage> statusUpdateMessageSet = new ConcurrentSkipListSet<>();
+	private final Set<StatusUpdateMessageSender> statusUpdateMessageSenderSet = new ConcurrentSkipListSet<>();
 
 	public void update(StatusUpdate update) {
 		if (update.equals(lastUpdate)) {
 			return;
 		}
 		lastUpdate = update;
-		final List<StatusUpdateMessage> remove = new ArrayList<>();
-		for (final StatusUpdateMessage statusUpdateMessage : statusUpdateMessageSet) {
-			statusUpdateMessage.update(update, () -> {
-				remove.add(statusUpdateMessage);
+		final List<StatusUpdateMessageSender> remove = new ArrayList<>();
+		for (final StatusUpdateMessageSender statusUpdateMessageSender : statusUpdateMessageSenderSet) {
+			statusUpdateMessageSender.update(update, () -> {
+				remove.add(statusUpdateMessageSender);
 			});
 		}
-		for (final StatusUpdateMessage statusUpdateMessage : remove) {
-			statusUpdateMessageSet.remove(statusUpdateMessage);
+		for (final StatusUpdateMessageSender statusUpdateMessage : remove) {
+			statusUpdateMessageSenderSet.remove(statusUpdateMessage);
 		}
 	}
 
-	public void addStatusUpdateMessage(StatusUpdateMessage statusUpdateMessage, boolean force) {
-		if (force && statusUpdateMessageSet.contains(statusUpdateMessage)) {
-			statusUpdateMessageSet.remove(statusUpdateMessage);
+	public void addStatusUpdateMessage(StatusUpdateMessageSender statusUpdateMessageSender, boolean force) {
+		if (force && statusUpdateMessageSenderSet.contains(statusUpdateMessageSender)) {
+			statusUpdateMessageSenderSet.remove(statusUpdateMessageSender);
 		}
-		final boolean added = statusUpdateMessageSet.add(statusUpdateMessage);
+		final boolean added = statusUpdateMessageSenderSet.add(statusUpdateMessageSender);
 		if (added && lastUpdate != null) {
-			statusUpdateMessage.update(lastUpdate, () -> {
-				statusUpdateMessageSet.remove(statusUpdateMessage);
+			statusUpdateMessageSender.update(lastUpdate, () -> {
+				statusUpdateMessageSenderSet.remove(statusUpdateMessageSender);
 			});
 		}
 

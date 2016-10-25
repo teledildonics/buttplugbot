@@ -35,7 +35,6 @@ import org.telegram.telegrambots.updateshandlers.SentCallback;
 import buttplugbot.telegrambot.dao.PatternDao;
 import buttplugbot.telegrambot.dao.PlugDao;
 import buttplugbot.telegrambot.model.Plug;
-import buttplugbot.telegrambot.model.Plug.Trace;
 import buttplugbot.telegrambot.model.StatusUpdate;
 import buttplugbot.telegrambot.smack.SmackConnection;
 import buttplugbot.telegrambot.util.EmailUtil;
@@ -115,13 +114,12 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			} else {
 				PlugControl plugControl = plugs.get(plugId);
 				if (plugControl == null) {
-					plugControl = new PlugControl(plug, connection, patternDao, plugDao);
+					plugControl = new PlugControl(plug, connection, patternDao, plugDao, new TraceSender());
 					plugs.put(plug.getId(), plugControl);
 				}
 				if (!command.contains("trace")) {
-					plugControl.getStatusMessageUpdater().addStatusUpdateMessage(
-							new StatusUpdateMessage(query.getMessage().getChatId(), query.getMessage().getMessageId()),
-							false);
+					plugControl.getStatusMessageUpdater().addStatusUpdateMessage(new StatusUpdateMessageSender(
+							query.getMessage().getChatId(), query.getMessage().getMessageId()), false);
 				}
 				answerText = plugControl.processMessage(query.getFrom().getId(), command);
 				traceCommand(query, command, plug);
@@ -148,20 +146,6 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 				&& query.getFrom().getId() == plug.getUserId()) {
 			plug.setUserChatId(query.getMessage().getChatId());
 			plugDao.storeDB();
-		}
-		if (!command.contains("trace") && plug.getTrace() == Trace.FULL_TRACE) {
-			final String traceMessage = "User " + name + " pressed the command " + command;
-			if (plug.getUserChatId() != null) {
-				try {
-					final SendMessage message = new SendMessage();
-					message.setChatId(String.valueOf(plug.getUserChatId()));
-					message.setText(traceMessage);
-					message.disableNotification();
-					sendMessage(message);
-				} catch (final TelegramApiException e) {
-					logger.warn("Failed to send message: " + e.getApiResponse(), e);
-				}
-			}
 		}
 	}
 
@@ -337,13 +321,13 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 
 		PlugControl plugControl = plugs.get(plug.getId());
 		if (plugControl == null) {
-			plugControl = new PlugControl(plug, connection, patternDao, plugDao);
+			plugControl = new PlugControl(plug, connection, patternDao, plugDao, new TraceSender());
 			plugs.put(plug.getId(), plugControl);
 		}
 		final Message message = sendButtons(absSender, chat, plug);
 		if (message != null) {
-			plugControl.getStatusMessageUpdater()
-					.addStatusUpdateMessage(new StatusUpdateMessage(message.getChatId(), message.getMessageId()), true);
+			plugControl.getStatusMessageUpdater().addStatusUpdateMessage(
+					new StatusUpdateMessageSender(message.getChatId(), message.getMessageId()), true);
 		}
 	}
 
@@ -413,13 +397,13 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		}
 	}
 
-	public class StatusUpdateMessage implements Comparable<StatusUpdateMessage> {
+	public class StatusUpdateMessageSender implements Comparable<StatusUpdateMessageSender> {
 
 		private final Long chatId;
 
 		private final Integer messageId;
 
-		public StatusUpdateMessage(Long chatId, Integer messageId) {
+		public StatusUpdateMessageSender(Long chatId, Integer messageId) {
 			this.chatId = chatId;
 			this.messageId = messageId;
 		}
@@ -475,7 +459,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			if (getClass() != obj.getClass()) {
 				return false;
 			}
-			final StatusUpdateMessage other = (StatusUpdateMessage) obj;
+			final StatusUpdateMessageSender other = (StatusUpdateMessageSender) obj;
 			if (chatId == null) {
 				if (other.chatId != null) {
 					return false;
@@ -487,8 +471,22 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		}
 
 		@Override
-		public int compareTo(StatusUpdateMessage o) {
+		public int compareTo(StatusUpdateMessageSender o) {
 			return Long.compare(chatId, o.chatId);
+		}
+	}
+
+	public class TraceSender {
+		public void sendTrace(Long userChatId, String traceMessage) {
+			try {
+				final SendMessage message = new SendMessage();
+				message.setChatId(String.valueOf(userChatId));
+				message.setText(traceMessage);
+				message.disableNotification();
+				sendMessage(message);
+			} catch (final TelegramApiException e) {
+				logger.warn("Failed to send message: " + e.getApiResponse(), e);
+			}
 		}
 	}
 }

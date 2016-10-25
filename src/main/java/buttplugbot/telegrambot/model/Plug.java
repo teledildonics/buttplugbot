@@ -177,6 +177,10 @@ public class Plug {
 		}
 	}
 
+	public String getLastInteractedUser() {
+		return lastInteractedUser;
+	}
+
 	public void setLastInteractedUser(String lastInteractedUser) {
 		this.lastInteractedUser = lastInteractedUser;
 	}
