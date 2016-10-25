@@ -14,8 +14,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.telegram.telegrambots.Constants;
-import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.api.methods.BotApiMethod;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
@@ -30,6 +28,8 @@ import org.telegram.telegrambots.api.objects.replykeyboard.buttons.InlineKeyboar
 import org.telegram.telegrambots.bots.AbsSender;
 import org.telegram.telegrambots.bots.TelegramLongPollingCommandBot;
 import org.telegram.telegrambots.bots.commands.BotCommand;
+import org.telegram.telegrambots.exceptions.TelegramApiException;
+import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
 import org.telegram.telegrambots.updateshandlers.SentCallback;
 
 import buttplugbot.telegrambot.dao.PatternDao;
@@ -135,7 +135,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		try {
 			answerCallbackQuery(answer);
 		} catch (final TelegramApiException e) {
-			logger.warn("Failed to send message: " + e.getApiResponse(), e);
+			logger.warn("Failed to send message: {}", e, e);
 		}
 	}
 
@@ -355,7 +355,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 				logger.info("Sending message: {}", answer);
 				absSender.sendMessage(answer);
 			} catch (final TelegramApiException e) {
-				logger.warn("Failed to send message: " + e.getApiResponse(), e);
+				logger.warn("Failed to send message: {}", e, e);
 			}
 		}
 	}
@@ -410,7 +410,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			logger.info("Sending message: {}", answer);
 			return absSender.sendMessage(answer);
 		} catch (final TelegramApiException e) {
-			logger.warn("Failed to send message: " + e.getApiResponse(), e);
+			logger.warn("Failed to send message: {}", e, e);
 			return null;
 		}
 	}
@@ -440,7 +440,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			logger.info("Sending message: {}", answer);
 			absSender.sendMessage(answer);
 		} catch (final TelegramApiException e) {
-			logger.warn("Failed to send message: " + e.getApiResponse(), e);
+			logger.warn("Failed to send message: {}", e, e);
 		}
 	}
 
@@ -472,7 +472,8 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 
 					@Override
 					public void onError(BotApiMethod<Message> method, JSONObject jsonObject) {
-						logger.warn("Failed to send message: " + jsonObject.getString(Constants.ERRORDESCRIPTIONFIELD));
+						logger.warn(
+								new TelegramApiRequestException("Failed to send message", jsonObject).toString());
 						remove.run();
 					}
 
@@ -530,9 +531,26 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 				message.setChatId(String.valueOf(userChatId));
 				message.setText(traceMessage);
 				message.disableNotification();
-				sendMessage(message);
+				sendMessageAsync(message, new SentCallback<Message>() {
+
+					@Override
+					public void onResult(BotApiMethod<Message> method, JSONObject jsonObject) {
+
+					}
+
+					@Override
+					public void onError(BotApiMethod<Message> method, JSONObject jsonObject) {
+						logger.warn("Failed to send message: "
+								+ new TelegramApiRequestException("", jsonObject).getApiResponse());
+					}
+
+					@Override
+					public void onException(BotApiMethod<Message> method, Exception exception) {
+						logger.warn("Failed to send message", exception);
+					}
+				});
 			} catch (final TelegramApiException e) {
-				logger.warn("Failed to send message: " + e.getApiResponse(), e);
+				logger.warn("Failed to send message: {}", e, e);
 			}
 		}
 	}
