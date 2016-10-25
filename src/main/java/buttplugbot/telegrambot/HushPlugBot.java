@@ -65,6 +65,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		register(new PlugCommand());
 		register(new UnregisterCommand());
 		register(new TraceCommand());
+		register(new TemporaryCommand());
 		executor.scheduleAtFixedRate(() -> {
 			for (final PlugControl plugControl : plugs.values()) {
 				plugControl.sendUpdate();
