@@ -47,7 +47,8 @@ public class StatusMessageUpdater {
 			}
 		}
 		for (final StatusUpdateMessageSender statusUpdateMessage : remove) {
-			statusUpdateMessage.disable();
+			statusUpdateMessage.update(new StatusUpdate("Sharing timed out, please reshare."), () -> {
+			});
 			statusUpdateMessageSenderSet.remove(statusUpdateMessage);
 		}
 	}
