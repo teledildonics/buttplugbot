@@ -13,7 +13,6 @@ public class Main {
 			connection.authenticate();
 			final TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
 			final HushPlugBot bot = new HushPlugBot(connection);
-			Runtime.getRuntime().addShutdownHook(new Thread(() -> bot.cleanup()));
 			telegramBotsApi.registerBot(bot);
 		} catch (final Exception e) {
 			e.printStackTrace();

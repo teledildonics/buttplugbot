@@ -678,10 +678,4 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			}
 		}
 	}
-
-	public void cleanup() {
-		for (final PlugControl plugControl : plugs.values()) {
-			plugControl.getStatusMessageUpdater().update(new StatusUpdate("Bot offline, please reshare."));
-		}
-	}
 }
