@@ -74,13 +74,17 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		register(new TraceCommand());
 		register(new TemporaryCommand());
 		executor.scheduleAtFixedRate(() -> {
-			for (final PlugControl plugControl : plugs.values()) {
-				plugControl.sendUpdate();
-			}
-			updateStatus++;
-			if (updateStatus % 300 == 0) {
-				connection.updateStatus();
-				cleanupTemporary();
+			try {
+				for (final PlugControl plugControl : plugs.values()) {
+					plugControl.sendUpdate();
+				}
+				updateStatus++;
+				if (updateStatus % 300 == 0) {
+					connection.updateStatus();
+					cleanupTemporary();
+				}
+			} catch (final Exception e) {
+				logger.error("Exception inside executor", e);
 			}
 		}, 100, 100, TimeUnit.MILLISECONDS);
 

@@ -19,7 +19,7 @@ public class StatusUpdate {
 	public String getMessage() {
 		return message;
 	}
-	
+
 	public boolean isKeyboard() {
 		return keyboard;
 	}
