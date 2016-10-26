@@ -148,6 +148,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		final Plug plug = plugDao.getPlugByUserId(query.getFrom().getId());
 		if (plug == null) {
 			answer.setSwitchPmText("Register your plug");
+			answer.setResults(Collections.emptyList());
 		} else {
 			int hours = -1;
 			if (query.hasQuery() && query.getQuery().length() > 0) {
