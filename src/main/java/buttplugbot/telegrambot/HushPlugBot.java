@@ -178,6 +178,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			textMessageContent.setMessageText("*Buttplug*\nConnecting...");
 			article.setInputMessageContent(textMessageContent);
 			answer.setResults(Collections.singletonList(article));
+			answer.setCacheTime(10);
 		}
 		try {
 			answerInlineQuery(answer);

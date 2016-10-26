@@ -118,7 +118,7 @@ public class PlugDao {
 
 	public String addTemporary(Plug plug, int hours) {
 		final long now = System.currentTimeMillis();
-		final TemporaryPlug temporaryPlug = new TemporaryPlug(null, now + hours * 3600000);
+		final TemporaryPlug temporaryPlug = new TemporaryPlug(plug, now + hours * 3600000);
 		final String id = Long.toHexString(createId());
 		temporaryPlugs.put(id, temporaryPlug);
 		return id;
