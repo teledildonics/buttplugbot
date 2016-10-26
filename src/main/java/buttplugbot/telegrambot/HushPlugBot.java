@@ -149,6 +149,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		if (plug == null) {
 			answer.setSwitchPmText("Register your plug");
 			answer.setResults(Collections.emptyList());
+			answer.setCacheTime(10);
 		} else {
 			int hours = -1;
 			if (query.hasQuery() && query.getQuery().length() > 0) {
