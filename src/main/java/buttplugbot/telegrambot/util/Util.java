@@ -37,7 +37,7 @@ public class Util {
 		}
 		try {
 			final double value = Double.parseDouble(string[0]);
-			if (!Double.isFinite(value) || value <= 0.0) {
+			if (Double.isInfinite(value) || value <= 0.0) {
 				return Double.NaN;
 			} else {
 				return value;
