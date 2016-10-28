@@ -338,10 +338,10 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
 			logger.info("Received /share command from user {} in chat {} with arguments {}",
 					new Object[] { user, chat, arguments });
-			int hours = -1;
+			double hours = -1;
 			if (arguments.length > 0) {
 				try {
-					hours = Integer.parseInt(arguments[0]);
+					hours = Double.parseDouble(arguments[0]);
 				} catch (final NumberFormatException e) {
 					logger.info("Unable to parse number: {}", arguments[0], e);
 				}
