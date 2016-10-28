@@ -166,7 +166,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			final InlineKeyboardMarkup replyMarkup = createKeyboard(id);
 			final InlineQueryResultArticle article = new InlineQueryResultArticle();
 			article.setTitle("Share your plug "
-					+ (!Double.isNaN(hours) ? "for " + String.format("%f.2", hours) + " hours" : "indefinitely"));
+					+ (!Double.isNaN(hours) ? String.format("for %.2f hours", hours) : "indefinitely"));
 			article.setReplyMarkup(replyMarkup);
 			article.setId("plug_" + id);
 			final InputTextMessageContent textMessageContent = new InputTextMessageContent();
@@ -361,7 +361,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 				message = "Please type \"/temporary hours\", e.g. \"/temporary 2\" for an id that is valid for 2 hours.";
 			} else {
 				final String newId = plugDao.addTemporary(plug, hours);
-				message = String.format("Your temporary id is: /plug %s%nIt's valid for %f.2 hours.", newId, hours);
+				message = String.format("Your temporary id is: /plug %s%nIt's valid for %.2f hours.", newId, hours);
 			}
 			sendMessage(absSender, chat, message);
 		}
