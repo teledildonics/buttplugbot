@@ -1,17 +1,11 @@
 package buttplugbot.telegrambot;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
+import buttplugbot.telegrambot.dao.PatternDao;
+import buttplugbot.telegrambot.dao.PlugDao;
+import buttplugbot.telegrambot.model.Plug;
+import buttplugbot.telegrambot.model.StatusUpdate;
+import buttplugbot.telegrambot.smack.SmackConnection;
+import buttplugbot.telegrambot.util.EmailUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -21,11 +15,7 @@ import org.telegram.telegrambots.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.api.methods.BotApiMethod;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageText;
-import org.telegram.telegrambots.api.objects.CallbackQuery;
-import org.telegram.telegrambots.api.objects.Chat;
-import org.telegram.telegrambots.api.objects.Message;
-import org.telegram.telegrambots.api.objects.Update;
-import org.telegram.telegrambots.api.objects.User;
+import org.telegram.telegrambots.api.objects.*;
 import org.telegram.telegrambots.api.objects.inlinequery.ChosenInlineQuery;
 import org.telegram.telegrambots.api.objects.inlinequery.InlineQuery;
 import org.telegram.telegrambots.api.objects.inlinequery.inputmessagecontent.InputTextMessageContent;
@@ -39,12 +29,9 @@ import org.telegram.telegrambots.exceptions.TelegramApiException;
 import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
 import org.telegram.telegrambots.updateshandlers.SentCallback;
 
-import buttplugbot.telegrambot.dao.PatternDao;
-import buttplugbot.telegrambot.dao.PlugDao;
-import buttplugbot.telegrambot.model.Plug;
-import buttplugbot.telegrambot.model.StatusUpdate;
-import buttplugbot.telegrambot.smack.SmackConnection;
-import buttplugbot.telegrambot.util.EmailUtil;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.*;
 
 public class HushPlugBot extends TelegramLongPollingCommandBot {
 
@@ -155,10 +142,10 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			answer.setResults(Collections.emptyList());
 			answer.setCacheTime(10);
 		} else {
-			int hours = -1;
+			double hours = -1;
 			if (query.hasQuery() && query.getQuery().length() > 0) {
 				try {
-					hours = Integer.parseInt(query.getQuery());
+					hours = Double.parseDouble(query.getQuery());
 				} catch (final NumberFormatException e) {
 					logger.info("Unable to parse number: {}", query.getQuery(), e);
 				}
@@ -171,7 +158,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			}
 			final InlineKeyboardMarkup replyMarkup = createKeyboard(id);
 			final InlineQueryResultArticle article = new InlineQueryResultArticle();
-			article.setTitle("Share your plug " + (hours > 0 ? "for " + hours + " hours" : "indefinitely"));
+			article.setTitle("Share your plug " + (hours > 0 ? "for " + hours + (hours == 1 ? " hour" : " hours") : "indefinitely"));
 			article.setReplyMarkup(replyMarkup);
 			article.setId("plug_" + id);
 			final InputTextMessageContent textMessageContent = new InputTextMessageContent();
@@ -256,7 +243,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		@Override
 		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
 			logger.info("Received /register command from user {} in chat {} with arguments {}",
-					new Object[] { user, chat, arguments });
+					new Object[]{user, chat, arguments});
 			startRegistering(absSender, chat);
 		}
 	}
@@ -312,7 +299,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		@Override
 		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
 			logger.info("Received /unregister command from user {} in chat {} with arguments {}",
-					new Object[] { user, chat, arguments });
+					new Object[]{user, chat, arguments});
 			final Plug plug = plugDao.getPlugByUserId(user.getId());
 			if (plug != null) {
 				connection.removeUser(plug.getTargetJid());
@@ -326,7 +313,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		if (!StringUtils.isEmpty(user.getUserName())) {
 			return "@" + user.getUserName();
 		}
-		return StringUtils.join(new String[] { user.getFirstName(), user.getLastName() }, " ");
+		return StringUtils.join(new String[]{user.getFirstName(), user.getLastName()}, " ");
 	}
 
 	public class ShareCommand extends BotCommand {
@@ -337,7 +324,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		@Override
 		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
 			logger.info("Received /share command from user {} in chat {} with arguments {}",
-					new Object[] { user, chat, arguments });
+					new Object[]{user, chat, arguments});
 			double hours = -1;
 			if (arguments.length > 0) {
 				try {
@@ -364,11 +351,11 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		@Override
 		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
 			logger.info("Received /temporary command from user {} in chat {} with arguments {}",
-					new Object[] { user, chat, arguments });
-			int hours = -1;
+					new Object[]{user, chat, arguments});
+			double hours = -1;
 			if (arguments.length > 0) {
 				try {
-					hours = Integer.parseInt(arguments[0]);
+					hours = Double.parseDouble(arguments[0]);
 				} catch (final NumberFormatException e) {
 					logger.info("Unable to parse number: {}", arguments[0], e);
 				}
@@ -377,7 +364,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			if (hours > 0) {
 				final String newId = plugDao.addTemporary(plug, hours);
 				sendMessage(absSender, chat,
-						"Your temporary id is: /plug " + newId + "\nIt's valid for " + hours + " hours.");
+						"Your temporary id is: /plug " + newId + "\nIt's valid for " + hours + (hours == 1 ? " hour." : " hours."));
 			} else {
 				sendMessage(absSender, chat,
 						"Please type \"/temporary hours\", e.g. \"/temporary 2\" for an id that is valid for 2 hours.");
@@ -393,7 +380,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		@Override
 		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
 			logger.info("Received /plug command from user {} in chat {} with arguments {}",
-					new Object[] { user, chat, arguments });
+					new Object[]{user, chat, arguments});
 
 			if (arguments.length != 1 || arguments[0] == null) {
 				sendMessage(absSender, chat, "Please type /plug id");
@@ -412,7 +399,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		@Override
 		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
 			logger.info("Received /trace command from user {} in chat {} with arguments {}",
-					new Object[] { user, chat, arguments });
+					new Object[]{user, chat, arguments});
 
 			if (!chat.isUserChat()) {
 				sendMessage(absSender, chat, "Please chat with me directly.");
@@ -478,7 +465,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		@Override
 		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
 			logger.info("Received /start command from user {} in chat {} with arguments {}",
-					new Object[] { user, chat, arguments });
+					new Object[]{user, chat, arguments});
 			final Plug plug = plugDao.getPlugByUserId(user.getId());
 			if (plug == null) {
 				startRegistering(absSender, chat);
