@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.slf4j.LoggerFactory;
 
 public class Util {
 
@@ -30,4 +31,20 @@ public class Util {
 		return httpclient;
 	}
 
+	public static double parsePositiveDouble(String... string) {
+		if (string == null || string.length < 1 || StringUtils.isEmpty(string[0])) {
+			return Double.NaN;
+		}
+		try {
+			final double value = Double.parseDouble(string[0]);
+			if (Double.isFinite(value) || value <= 0.0) {
+				return Double.NaN;
+			} else {
+				return value;
+			}
+		} catch (final NumberFormatException e) {
+			LoggerFactory.getLogger(Util.class).info("Unable to parse number: {}", string, e);
+			return Double.NaN;
+		}
+	}
 }

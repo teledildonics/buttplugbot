@@ -45,6 +45,7 @@ import buttplugbot.telegrambot.model.Plug;
 import buttplugbot.telegrambot.model.StatusUpdate;
 import buttplugbot.telegrambot.smack.SmackConnection;
 import buttplugbot.telegrambot.util.EmailUtil;
+import buttplugbot.telegrambot.util.Util;
 
 public class HushPlugBot extends TelegramLongPollingCommandBot {
 
@@ -155,23 +156,17 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			answer.setResults(Collections.emptyList());
 			answer.setCacheTime(10);
 		} else {
-			int hours = -1;
-			if (query.hasQuery() && query.getQuery().length() > 0) {
-				try {
-					hours = Integer.parseInt(query.getQuery());
-				} catch (final NumberFormatException e) {
-					logger.info("Unable to parse number: {}", query.getQuery(), e);
-				}
-			}
+			final double hours = Util.parsePositiveDouble(query.getQuery());
 			final String id;
-			if (hours > 0) {
-				id = plugDao.addTemporary(plug, hours);
-			} else {
+			if (Double.isNaN(hours)) {
 				id = plug.getId();
+			} else {
+				id = plugDao.addTemporary(plug, hours);
 			}
 			final InlineKeyboardMarkup replyMarkup = createKeyboard(id);
 			final InlineQueryResultArticle article = new InlineQueryResultArticle();
-			article.setTitle("Share your plug " + (hours > 0 ? "for " + hours + " hours" : "indefinitely"));
+			article.setTitle("Share your plug "
+					+ (!Double.isNaN(hours) ? "for " + String.format("%f.2", hours) + " hours" : "indefinitely"));
 			article.setReplyMarkup(replyMarkup);
 			article.setId("plug_" + id);
 			final InputTextMessageContent textMessageContent = new InputTextMessageContent();
@@ -338,21 +333,15 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
 			logger.info("Received /share command from user {} in chat {} with arguments {}",
 					new Object[] { user, chat, arguments });
-			double hours = -1;
-			if (arguments.length > 0) {
-				try {
-					hours = Double.parseDouble(arguments[0]);
-				} catch (final NumberFormatException e) {
-					logger.info("Unable to parse number: {}", arguments[0], e);
-				}
-			}
+			final double hours = Util.parsePositiveDouble(arguments);
 			final Plug plug = plugDao.getPlugByUserId(user.getId());
-			if (hours > 0) {
-				final String newId = plugDao.addTemporary(plug, hours);
-				showButtonsForPlug(absSender, chat, plug, newId);
+			final String plugId;
+			if (Double.isNaN(hours)) {
+				plugId = plug.getId();
 			} else {
-				showButtonsForPlug(absSender, chat, plug, plug.getId());
+				plugId = plugDao.addTemporary(plug, hours);
 			}
+			showButtonsForPlug(absSender, chat, plug, plugId);
 		}
 	}
 
@@ -365,23 +354,16 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
 			logger.info("Received /temporary command from user {} in chat {} with arguments {}",
 					new Object[] { user, chat, arguments });
-			int hours = -1;
-			if (arguments.length > 0) {
-				try {
-					hours = Integer.parseInt(arguments[0]);
-				} catch (final NumberFormatException e) {
-					logger.info("Unable to parse number: {}", arguments[0], e);
-				}
-			}
+			final double hours = Util.parsePositiveDouble(arguments);
 			final Plug plug = plugDao.getPlugByUserId(user.getId());
-			if (hours > 0) {
-				final String newId = plugDao.addTemporary(plug, hours);
-				sendMessage(absSender, chat,
-						"Your temporary id is: /plug " + newId + "\nIt's valid for " + hours + " hours.");
+			final String message;
+			if (Double.isNaN(hours)) {
+				message = "Please type \"/temporary hours\", e.g. \"/temporary 2\" for an id that is valid for 2 hours.";
 			} else {
-				sendMessage(absSender, chat,
-						"Please type \"/temporary hours\", e.g. \"/temporary 2\" for an id that is valid for 2 hours.");
+				final String newId = plugDao.addTemporary(plug, hours);
+				message = String.format("Your temporary id is: /plug %s%nIt's valid for %f.2 hours.", newId, hours);
 			}
+			sendMessage(absSender, chat, message);
 		}
 	}
 
@@ -462,7 +444,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			plugControl = new PlugControl(plug, connection, patternDao, plugDao, new TraceSender());
 			plugs.put(plug.getId(), plugControl);
 		}
-		final Message message = sendButtons(absSender, chat, plug, id);
+		final Message message = sendButtons(absSender, chat, id);
 		if (message != null) {
 			plugControl.getStatusMessageUpdater().addStatusUpdateMessage(
 					new StatusUpdateMessageSender(message.getChatId(), message.getMessageId(), id), true);
@@ -489,7 +471,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 
 	}
 
-	private Message sendButtons(AbsSender absSender, Chat chat, final Plug plug, String id) {
+	private Message sendButtons(AbsSender absSender, Chat chat, String id) {
 		final SendMessage answer = new SendMessage();
 		answer.disableNotification();
 		final InlineKeyboardMarkup replyMarkup = createKeyboard(id);
