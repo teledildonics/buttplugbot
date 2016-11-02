@@ -37,6 +37,7 @@ import buttplugbot.telegrambot.Config;
 import buttplugbot.telegrambot.model.UserMessage;
 import buttplugbot.telegrambot.model.UserMessage.Type;
 import buttplugbot.telegrambot.util.DateSerializer;
+import buttplugbot.telegrambot.util.EmailUtil;
 import buttplugbot.telegrambot.util.UserMessageTypeEnumSerializer;
 import buttplugbot.telegrambot.util.Util;
 
@@ -93,7 +94,11 @@ public class SmackConnection {
 			roster.setSubscriptionMode(SubscriptionMode.manual);
 			xmpp.addSyncStanzaListener(new SmackStanzaListener(this), StanzaTypeFilter.PRESENCE);
 			roster.addRosterListener(new SmackRosterListener(this));
-			xmpp.login(Util.emailToJidUser(Config.email), Config.password, Config.resource);
+			String email = EmailUtil.check(Config.email);
+			if (email == null) {
+				throw new IllegalStateException("Bot account "+Config.email+" does not exists at Lovense!");
+			}
+			xmpp.login(Util.emailToJidUser(email), Config.password, Config.resource);
 			if (!roster.isLoaded()) {
 				roster.reloadAndWait();
 			}
