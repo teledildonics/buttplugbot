@@ -176,7 +176,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		try {
 			answerInlineQuery(answer);
 		} catch (final TelegramApiException e) {
-			logger.warn("Failed to send message: {}", e, e);
+			logger.warn("Failed to send message: {}", answer, e);
 		}
 	}
 
@@ -219,7 +219,7 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		try {
 			answerCallbackQuery(answer);
 		} catch (final TelegramApiException e) {
-			logger.warn("Failed to send message: {}", e, e);
+			logger.warn("Failed to send message: {}", answer, e);
 		}
 	}
 
