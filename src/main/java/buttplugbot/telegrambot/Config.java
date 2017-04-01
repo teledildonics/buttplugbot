@@ -24,7 +24,7 @@ public interface Config {
 	/**
 	 * API host for uploading patterns
 	 */
-	static final String apiUrl = "http://" + host;
+	static final String apiUrl = "https://apps.lovense.com";
 
 	/**
 	 * XMPP port

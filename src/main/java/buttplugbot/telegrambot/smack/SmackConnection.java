@@ -190,6 +190,8 @@ public class SmackConnection {
 
 		final DefaultExtensionElement defaultExtensionElement = new DefaultExtensionElement("toy", null);
 		defaultExtensionElement.setValue("name", "Hush Butt Plug");
+		defaultExtensionElement.setValue("version", "1.8.7");
+		defaultExtensionElement.setValue("platform", "android");
 		defaultExtensionElement.setValue("status", "true");
 		presence2.addExtension(defaultExtensionElement);
 
