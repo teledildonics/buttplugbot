@@ -46,7 +46,7 @@ public class SmackRosterListener implements RosterListener {
 				final String status = defaultExtensionElement.getValue("status");
 				boolean online = connection.isPlugOnline(jid);
 				connection.setPlugOnline(jid, "true".equals(status));
-				if (!online) {
+				if (!online && "true".equals(status)) {
 					UserMessage um = new UserMessage();
 					um.setToJid(presence.getFrom());
 					um.setType(Type.live);
