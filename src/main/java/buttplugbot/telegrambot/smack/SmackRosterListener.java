@@ -9,6 +9,9 @@ import org.jivesoftware.smack.roster.RosterListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import buttplugbot.telegrambot.model.UserMessage;
+import buttplugbot.telegrambot.model.UserMessage.Type;
+
 public class SmackRosterListener implements RosterListener {
 	private final SmackConnection connection;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -34,19 +37,28 @@ public class SmackRosterListener implements RosterListener {
 
 	@Override
 	public void presenceChanged(Presence presence) {
+		String jid = presence.getFrom().split("/")[0];
 		logger.info("Presence changed: " + presence);
 		if (presence.isAvailable()) {
 			if (presence.hasExtension("toy", StreamOpen.CLIENT_NAMESPACE)) {
 				final DefaultExtensionElement defaultExtensionElement = (DefaultExtensionElement) presence
 						.getExtension("toy", StreamOpen.CLIENT_NAMESPACE);
 				final String status = defaultExtensionElement.getValue("status");
-				connection.setPlugOnline(presence.getFrom().split("/")[0], "true".equals(status));
+				boolean online = connection.isPlugOnline(jid);
+				connection.setPlugOnline(jid, "true".equals(status));
+				if (!online) {
+					UserMessage um = new UserMessage();
+					um.setToJid(presence.getFrom());
+					um.setType(Type.live);
+					um.setText("request");				
+					connection.sendMessage(um);
+				}
 			} else {
-				connection.setPlugOnline(presence.getFrom().split("/")[0], false);
+				connection.setPlugOnline(jid, false);
 			}
-			connection.setOnline(presence.getFrom().split("/")[0], true);
+			connection.setOnline(jid, true);
 		} else {
-			connection.setOnline(presence.getFrom().split("/")[0], false);
+			connection.setOnline(jid, false);
 		}
 
 	}
