@@ -20,6 +20,7 @@ import org.telegram.telegrambots.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.api.methods.BotApiMethod;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
+import org.telegram.telegrambots.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.api.objects.CallbackQuery;
 import org.telegram.telegrambots.api.objects.Chat;
@@ -69,11 +70,8 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		this.connection = connection;
 		register(new RegisterCommand());
 		register(new StartCommmand());
-		register(new ShareCommand());
-		register(new PlugCommand());
 		register(new UnregisterCommand());
 		register(new TraceCommand());
-		register(new TemporaryCommand());
 		executor.scheduleAtFixedRate(() -> {
 			try {
 				for (final PlugControl plugControl : plugs.values()) {
@@ -291,11 +289,10 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 			plugDao.add(plug);
 		}
 		sendMessage(absSender, message.getChat(),
-				"You have been registered now.\n" + "You can type /share in any group chat, that contains this bot. "
-						+ "You can limit the usage time by typing for example /share 2 to limit it to 2 hours.\n\n"
-						+ "I created an unlimited id for you: /plug " + plug.getId() + "\n"
-						+ "If you share this id with someone, they can view and share your controls, until you use the /unregister command.\n"
-						+ "You can create temporary ids with the /temporary command.");
+				"You have been registered now.\n"
+						+ "Please make sure that in the Lovense App you allow \"Auto-play patterns that this person sends\" and \"Allow control without requests\".\n"
+						+ "You can share the controls to any chat by typing @" + Config.botName + ".");
+		sendPhoto(absSender, message.getChat(), "recommended_settings.jpg");
 	}
 
 	public class UnregisterCommand extends BotCommand {
@@ -324,75 +321,9 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		return StringUtils.join(new String[] { user.getFirstName(), user.getLastName() }, " ");
 	}
 
-	public class ShareCommand extends BotCommand {
-		public ShareCommand() {
-			super("share", "Share the control of your plug with the current chat.");
-		}
-
-		@Override
-		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
-			logger.info("Received /share command from user {} in chat {} with arguments {}",
-					new Object[] { user, chat, arguments });
-			final double hours = Util.parsePositiveDouble(arguments);
-			final Plug plug = plugDao.getPlugByUserId(user.getId());
-			if (plug == null) {
-				sendMessage(absSender, chat, "Plug not registered, please chat with me directly.");
-				return;
-			}
-			final String plugId;
-			if (Double.isNaN(hours)) {
-				plugId = plug.getId();
-			} else {
-				plugId = plugDao.addTemporary(plug, hours);
-			}
-			showButtonsForPlug(absSender, chat, plug, plugId);
-		}
-	}
-
-	public class TemporaryCommand extends BotCommand {
-		public TemporaryCommand() {
-			super("temporary", "Create an id that is only available for some hours.");
-		}
-
-		@Override
-		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
-			logger.info("Received /temporary command from user {} in chat {} with arguments {}",
-					new Object[] { user, chat, arguments });
-			final double hours = Util.parsePositiveDouble(arguments);
-			final Plug plug = plugDao.getPlugByUserId(user.getId());
-			final String message;
-			if (Double.isNaN(hours)) {
-				message = "Please type \"/temporary hours\", e.g. \"/temporary 2\" for an id that is valid for 2 hours.";
-			} else {
-				final String newId = plugDao.addTemporary(plug, hours);
-				message = String.format("Your temporary id is: /plug %s%nIt's valid for %.2f hours.", newId, hours);
-			}
-			sendMessage(absSender, chat, message);
-		}
-	}
-
-	public class PlugCommand extends BotCommand {
-		public PlugCommand() {
-			super("plug", "Show the buttons for a plug in the current chat.");
-		}
-
-		@Override
-		public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
-			logger.info("Received /plug command from user {} in chat {} with arguments {}",
-					new Object[] { user, chat, arguments });
-
-			if (arguments.length != 1 || arguments[0] == null) {
-				sendMessage(absSender, chat, "Please type /plug id");
-				return;
-			}
-			final Plug plug = plugDao.getPlugById(arguments[0]);
-			showButtonsForPlug(absSender, chat, plug, arguments[0]);
-		}
-	}
-
 	public class TraceCommand extends BotCommand {
 		public TraceCommand() {
-			super("trace", "Select, if you want to be notified, if someone presses a button.");
+			super("trace", "Select, if you want to be notified, when someone presses a button.");
 		}
 
 		@Override
@@ -516,6 +447,18 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 		try {
 			logger.info("Sending message: {}", answer);
 			absSender.sendMessage(answer);
+		} catch (final TelegramApiException e) {
+			logger.warn("Failed to send message: {}", e, e);
+		}
+	}
+
+	private void sendPhoto(AbsSender absSender, Chat chat, String resource) {
+		final SendPhoto answer = new SendPhoto();
+		answer.setChatId(chat.getId().toString());
+		answer.setNewPhoto(resource, this.getClass().getResourceAsStream("/" + resource));
+		try {
+			logger.info("Sending photo: {}", answer);
+			absSender.sendPhoto(answer);
 		} catch (final TelegramApiException e) {
 			logger.warn("Failed to send message: {}", e, e);
 		}
