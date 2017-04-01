@@ -29,7 +29,7 @@ public class PlugRecipient {
 		userMessage.setUrl(pattern.getUrl());
 		userMessage.setTime(pattern.getTimer());
 		userMessage.setTypeDetail("resendpattern");
-		userMessage.setPatternId(pattern.getId());
+		//userMessage.setPatternId(pattern.getId());
 		userMessage.setAutoPlay(true);
 		connection.sendMessage(userMessage);
 	}
