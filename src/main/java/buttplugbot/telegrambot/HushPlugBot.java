@@ -335,6 +335,9 @@ public class HushPlugBot extends TelegramLongPollingCommandBot {
 					new Object[] { user, chat, arguments });
 			final double hours = Util.parsePositiveDouble(arguments);
 			final Plug plug = plugDao.getPlugByUserId(user.getId());
+			if (plug == null) {
+				sendMessage(absSender, chat, "Plug not registered, please chat with me directly.");
+			}
 			final String plugId;
 			if (Double.isNaN(hours)) {
 				plugId = plug.getId();
